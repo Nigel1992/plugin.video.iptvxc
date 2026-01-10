@@ -139,11 +139,11 @@ def start(signin):
 def home():
 	tools.addDir('Account Information','url',6,iconaccount,background,'')
 	tools.addDir('Live TV','live',1,iconlive,background,'')
-	tools.addDir('TV Series','live',18,iconTvseries,background,'')
 	if xbmc.getCondVisibility('System.HasAddon(pvr.iptvsimple)'):
 		tools.addDir('TV Guide','pvr',7,icontvguide,background,'')
 	tools.addDir('Catchup TV','url',12,iconcatchup,background,'')
-	tools.addDir('Video On Demand','vod',3,iconMoviesod,background,'')
+	tools.addDir('Movies/VOD','vod',3,iconMoviesod,background,'')
+	tools.addDir('Series','live',18,iconTvseries,background,'')
 	tools.addDir('Search','url',5,iconsearch,background,'')
 	tools.addDir('Settings','url',8,iconsettings,background,'')
 	tools.addDir('Extras','url',16,iconextras,background,'')

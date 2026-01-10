@@ -1,4 +1,4 @@
-name: Kodi Addon Checker
+name: Test Kodi Add-on (Omega)
 
 on:
   push:
@@ -7,23 +7,34 @@ on:
     branches: [ main, master ]
 
 jobs:
-  kodi-addon-checker:
+  kodi-addon-check:
+    name: Kodi Add-on Checker (Omega)
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install setuptools wheel
-        pip install kodi-addon-checker
-    
-    - name: Run addon checker
-      run: |
-        kodi-addon-checker --branch omega .
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Kodi Add-on Checker (v21 Omega)
+        uses: xbmc/action-kodi-addon-checker@v1
+        with:
+          kodi-version: omega
+          addon-id: plugin.video.iptvxc
+          allow-beta: true
+
+  python-syntax:
+    name: Python 3.13 Syntax Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Compile Python files
+        run: |
+          python -m compileall .

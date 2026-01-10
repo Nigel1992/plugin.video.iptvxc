@@ -1,51 +1,113 @@
 <div align="center">
 
-# XCUI Streams (plugin.video.iptvxc)
+# **XCUI Streams**  
+### *plugin.video.iptvxc*
 
-Reliable XC/XCUI provider playback for Kodi — Live TV, VOD, Catchup, and TV Series — optimized for Kodi v21 (Omega) and Python 3.13.
+**High-performance XC / XCUI playback for Kodi**  
+Live TV • VOD • Catch-up • TV Series  
+Optimized for **Kodi v21 (Omega)** & **Python 3.13**
 
-[Latest Release](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest) · [Report an Issue](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
+[![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
+[![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=flat-square)](https://kodi.tv)
+[![Python](https://img.shields.io/badge/Python-3.13-yellow?style=flat-square)](https://www.python.org/)
+[![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
 
 </div>
 
-## Features
-- Fast browsing and playback for Live TV and VOD
-- TV Series with seasons and episodes
-- Catchup TV support (where provided)
-- Built-in speed test and advanced settings helpers
+---
 
-## Compatibility
-- Kodi: v21 (Omega) or newer recommended
-- Python: 3.13 (bundled with Kodi v21 on many platforms)
-- Requires an active XC/XCUI-compatible provider account
+## 🚀 Overview
 
-## Installation
-1. Download the latest release zip:
-   - https://github.com/Nigel1992/plugin.video.iptvxc/releases
-2. In Kodi:
-   - Settings → Add-ons → Install from zip file
-   - Choose the downloaded `plugin.video.iptvxc-<version>.zip`
-3. Open the add-on and configure your provider credentials in Settings.
+**XCUI Streams** is a fast, reliable IPTV add-on for Kodi, providing seamless playback for **XC/XCUI-compatible providers**.  
+Designed with performance, stability, and modern Kodi standards in mind.
 
-## Usage
-- Launch XCUI Streams from Video add-ons.
-- Browse: Live TV, TV Series, Catchup TV, or VOD.
-- Series flow: Select a series → pick a season → choose an episode.
+---
 
-## Release Notes (3.2.0)
-- Python 3.13 compatibility: raw regex strings to eliminate escape warnings/regressions.
-- Safer URL building: `quote_plus(str(...))` prevents `TypeError` when providers return `null` fields.
-- Season listing robustness: fixes Season 1/2 not loading for certain providers that return empty `seasons` arrays while still including episodes.
-  - Fallback now parses the episodes dictionary directly and supports both string and integer season keys.
+## ✨ Features
 
-## Troubleshooting
-- No items? Verify provider credentials and network connectivity.
-- Limited metadata is normal for some providers (images/plots may be missing).
-- Deprecation notices for `ListItem.setInfo()` don’t affect playback; we’ll migrate to `InfoTagVideo` setters in a future release.
+- ⚡ **Fast navigation & playback** for Live TV and VOD  
+- 📺 **TV Series support** with seasons & episodes  
+- ⏪ **Catch-up TV** (provider-dependent)  
+- 🛠️ **Built-in speed test** and advanced configuration helpers  
+- 🧠 Robust handling of inconsistent provider APIs
 
-## Contributing
-Issues and PRs are welcome. Please avoid sharing provider credentials publicly. For bug reports, include Kodi version, platform, and relevant logs.
+---
 
-## Credits
-- Original work by Fire TV Guru
+## 🧩 Compatibility
+
+| Component | Requirement |
+|---------|-------------|
+| **Kodi** | v21 (Omega) or newer |
+| **Python** | 3.13 (bundled with Kodi v21) |
+| **Account** | Active XC / XCUI-compatible provider |
+
+---
+
+## 📦 Installation
+
+1. **Download the latest release**  
+   👉 https://github.com/Nigel1992/plugin.video.iptvxc/releases
+
+2. **Install in Kodi**
+   - `Settings` → `Add-ons` → `Install from zip file`
+   - Select `plugin.video.iptvxc-<version>.zip`
+
+3. **Configure**
+   - Open the add-on
+   - Enter your provider credentials in **Settings**
+
+---
+
+## ▶️ Usage
+
+- Open **XCUI Streams** from *Video add-ons*
+- Browse:
+  - **Live TV**
+  - **VOD**
+  - **TV Series**
+  - **Catch-up TV**
+- **TV Series flow**  
+  *Series* → *Season* → *Episode*
+
+---
+
+## 📝 Release Notes — **v3.2.0**
+
+### Improvements & Fixes
+
+- **Python 3.13 compatibility**
+  - Converted regex patterns to raw strings to eliminate escape warnings and regressions
+- **Safer URL handling**
+  - `quote_plus(str(...))` prevents `TypeError` when providers return `null` values
+- **Improved season parsing**
+  - Fixes missing Season 1/2 for providers returning empty `seasons` arrays
+  - Fallback parses episodes directly
+  - Supports both **string** and **integer** season keys
+
+---
+
+## 🛠️ Troubleshooting
+
+- **No content visible?**
+  - Verify provider credentials
+  - Check network connectivity
+- **Missing metadata**
+  - Normal for some providers
+- **Deprecation warnings**
+  - `ListItem.setInfo()` warnings do not affect playback
+  - Migration to `InfoTagVideo` is planned
+
+---
+
+## 🤝 Contributing
+
+Issues and PRs are welcome.  
+Please avoid sharing provider credentials publicly.  
+Include Kodi version, platform, and logs when reporting bugs.
+
+---
+
+## 🙏 Credits
+
+- Original work by **Fire TV Guru**
 - Community contributions and testing

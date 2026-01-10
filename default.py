@@ -42,8 +42,7 @@ import xbmc,xbmcaddon,xbmcgui,xbmcplugin,xbmcvfs
 	#Python Specific
 import base64,os,re,unicodedata,time,string,sys,urllib.request
 import urllib.parse,urllib.error,json,datetime,zipfile,shutil
-import xml.dom.minidom
-from xml.dom.minidom import Node
+import xml.etree.ElementTree as ET
 from datetime import date
 	#Addon Specific
 from resources.modules import control,tools,popup,speedtest
@@ -149,73 +148,99 @@ def home():
 	tools.addDir('Extras','url',16,iconextras,background,'')
 
 def livecategory():
-	open = tools.OPEN_URL(live_url)
-	i = 0
-	doc = xml.dom.minidom.parseString(open)
-	for topic in doc.getElementsByTagName('channel'):
-		name= tools.b64(doc.getElementsByTagName('title')[i].firstChild.nodeValue)
-		url2 = tools.check_protocol(doc.getElementsByTagName('playlist_url')[i].firstChild.nodeValue).replace('<![CDATA[','').replace(']]>','')
-		if xbmcaddon.Addon().getSetting('hidexxx')=='false':
-			tools.addDir('%s'%name,url2,2,icon,live,'')
-		else:
-			if not any(s in name for s in adult_tags):
-				tools.addDir('%s'%name,url2,2,icon,background,'')
-		i +=1
+	data = tools.OPEN_URL(live_url)
+	if not data:
+		return
+	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
+	try:
+		root = ET.fromstring(data)
+	except Exception:
+		return
+	for ch in root.findall('.//channel'):
+		t = ch.findtext('title', default='')
+		name = tools.b64(t) if t else ''
+		p = ch.findtext('playlist_url', default='')
+		url2 = tools.check_protocol(p).replace('<![CDATA[','').replace(']]>','')
+		if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
+			tools.addDir('%s' % name, url2, 2, icon, background if hidexxx else live, '')
 
 def Livelist(url):
-	url	 = buildcleanurl(url)
-	open = tools.OPEN_URL(url)
-	i = 0
-	doc = xml.dom.minidom.parseString(open)
-	for topic in doc.getElementsByTagName('channel'):
-		name = re.sub(r'\[.*?min ', '-', tools.b64(doc.getElementsByTagName('title')[i].firstChild.nodeValue))
-		url1 = tools.check_protocol(doc.getElementsByTagName('stream_url')[i].firstChild.nodeValue).replace('<![CDATA[','').replace(']]>','')
-		try:
-			thumb = (doc.getElementsByTagName('desc_image')[i].firstChild.nodeValue).replace('<![CDATA[ ','').replace(' ]]>','')
-			desc = tools.b64(doc.getElementsByTagName('description')[i].firstChild.nodeValue)
-		except:
-			thumb = live
-			desc = 'No Info Available'
-		if xbmcaddon.Addon().getSetting('hidexxx')=='false':
-			tools.addDir('%s'%name,url1,4,thumb,background,desc)
+	url  = buildcleanurl(url)
+	data = tools.OPEN_URL(url)
+	if not data:
+		return
+	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
+	try:
+		root = ET.fromstring(data)
+	except Exception:
+		return
+	for ch in root.findall('.//channel'):
+		t = ch.findtext('title', default='')
+		name = re.sub(r'\[.*?min ', '-', tools.b64(t)) if t else ''
+		s = ch.findtext('stream_url', default='')
+		url1 = tools.check_protocol(s).replace('<![CDATA[','').replace(']]>','')
+		thumb = ch.findtext('desc_image', default='')
+		if thumb:
+			thumb = thumb.replace('<![CDATA[ ','').replace(' ]]>','')
 		else:
-			if not any(s in name for s in adult_tags):
-				tools.addDir('%s'%name,url1,4,thumb,background,desc)
-		i +=1
+			thumb = live
+		d = ch.findtext('description', default='')
+		desc = tools.b64(d) if d else 'No Info Available'
+		if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
+			tools.addDir('%s' % name, url1, 4, thumb, background, desc)
 
 def series_cats(url):
-	open = tools.OPEN_URL(player_api+'&action=get_series_categories')
-	parse = json.loads(open)
-	vod_cat = parse
+	raw = tools.OPEN_URL(player_api+'&action=get_series_categories')
+	if not raw:
+		return
+	try:
+		vod_cat = json.loads(raw)
+	except Exception:
+		return
+	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
 	for cat in vod_cat:
-		if xbmcaddon.Addon().getSetting('hidexxx')=='false':
-			tools.addDir(cat['category_name'],player_api+'&action=get_series&category_id='+cat['category_id'],25,icon,background,'')
-		else:
-			if not any(s in name for s in adult_tags):
-				tools.addDir(cat['category_name'],player_api+'&action=get_series&category_id='+cat['category_id'],25,icon,background,'')
+		name = cat.get('category_name','')
+		cid = cat.get('category_id','')
+		if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
+			tools.addDir(name, player_api+'&action=get_series&category_id='+str(cid), 25, icon, background, '')
 
 def serieslist(url):
-	open  = tools.OPEN_URL(url)
-	ser_cat = json.loads(open)
+	raw = tools.OPEN_URL(url)
+	if not raw:
+		return
+	try:
+		ser_cat = json.loads(raw)
+	except Exception:
+		return
+	meta_on = xbmcaddon.Addon().getSetting('meta')=='true'
 	for ser in ser_cat:
-		if xbmcaddon.Addon().getSetting('meta') == 'true':
-			tools.addDirMeta(ser['name'],player_api+'&action=get_series_info&series_id='+str(ser['series_id']),19,ser['cover'],ser['backdrop_path'][0],ser['plot'],ser['releaseDate'],str(ser['cast']).split(),ser['rating_5based'],ser['episode_run_time'],ser['genre'])
+		if meta_on:
+			tools.addDirMeta(ser.get('name',''), player_api+'&action=get_series_info&series_id='+str(ser.get('series_id','')), 19, ser.get('cover',''), (ser.get('backdrop_path') or [''])[0] if ser.get('backdrop_path') else '', ser.get('plot',''), ser.get('releaseDate',''), str(ser.get('cast','')).split(), ser.get('rating_5based',''), ser.get('episode_run_time',''), ser.get('genre',''))
 		else:
-			#xbmc.log('[FTG]--',2)
-			tools.addDir(ser['name'],player_api+'&action=get_series_info&series_id='+str(ser['series_id']),19,ser['cover'],background,'')
+			tools.addDir(ser.get('name',''), player_api+'&action=get_series_info&series_id='+str(ser.get('series_id','')), 19, ser.get('cover',''), background, '')
 
 def series_seasons(url):
-	open  = tools.OPEN_URL(url)
-	ser_cat = json.loads(open)
-	for ser in ser_cat['episodes']:
-		info = ser_cat['info']
-		tools.addDir('Season - '+ser,url+'&season_number='+str(ser),20,info['cover'],info['backdrop_path'][0],'')
+	raw = tools.OPEN_URL(url)
+	if not raw:
+		return
+	try:
+		ser_cat = json.loads(raw)
+	except Exception:
+		return
+	info = ser_cat.get('info', {})
+	for season in ser_cat.get('episodes', {}):
+		tools.addDir('Season - '+str(season), url+'&season_number='+str(season), 20, info.get('cover',''), (info.get('backdrop_path') or [''])[0] if info.get('backdrop_path') else '', '')
 
 def season_list(url):
-	open  = tools.OPEN_URL(url)
-	ser_cat = json.loads(open)
-	info = ser_cat['info']
-	ser_cat = ser_cat['episodes']
+	raw = tools.OPEN_URL(url)
+	if not raw:
+		return
+	try:
+		ser = json.loads(raw)
+	except Exception:
+		return
+	info = ser.get('info', {})
+	episodes_map = ser.get('episodes', {})
 	from urllib.parse import urlparse, parse_qs
 	parsed_url = urlparse(url)
 	season_qs = parse_qs(parsed_url.query).get('season_number', [])
@@ -223,34 +248,33 @@ def season_list(url):
 
 	episodes = []
 	try:
-		if isinstance(ser_cat, dict):
-			# Handle both string and integer keys for season numbers
+		if isinstance(episodes_map, dict):
 			key = season_number
 			alt_key = None
 			try:
 				alt_key = int(season_number) if season_number is not None else None
 			except:
 				alt_key = None
-			if key in ser_cat and ser_cat[key]:
-				episodes = ser_cat[key]
-			elif alt_key is not None and alt_key in ser_cat and ser_cat[alt_key]:
-				episodes = ser_cat[alt_key]
+			if key in episodes_map and episodes_map[key]:
+				episodes = episodes_map[key]
+			elif alt_key is not None and alt_key in episodes_map and episodes_map[alt_key]:
+				episodes = episodes_map[alt_key]
 			else:
-				# Fallback: flatten all episodes across seasons
-				for k in ser_cat:
+				for k in episodes_map:
 					try:
-						for e in ser_cat[k]:
+						for e in episodes_map[k]:
 							episodes.append(e)
 					except:
 						pass
-		elif isinstance(ser_cat, list):
-			episodes = ser_cat
+		elif isinstance(episodes_map, list):
+			episodes = episodes_map
 	except:
 		episodes = []
 
-	for ser in episodes:
-		title = ser.get('title') or ser.get('name') or 'Episode'
-		ser_info = ser.get('info')
+	meta_on = xbmcaddon.Addon().getSetting('meta')=='true'
+	for ep in episodes:
+		title = ep.get('title') or ep.get('name') or 'Episode'
+		ser_info = ep.get('info')
 		if isinstance(ser_info, list):
 			ser_info = ser_info[0] if ser_info else {}
 		if not isinstance(ser_info, dict):
@@ -259,36 +283,40 @@ def season_list(url):
 		plot = ser_info.get('plot') or ''
 		releasedate = ser_info.get('releasedate') or ser_info.get('releaseDate') or ''
 		duration = ser_info.get('duration') or ''
-		container_extension = ser.get('container_extension') or 'mp4'
-
-		if xbmcaddon.Addon().getSetting('meta') == 'true':
-			tools.addDirMeta(title, play_series+str(ser.get('id'))+'.'+container_extension, 4, cover, cover, plot, releasedate, str(info.get('cast', '')).split(), info.get('rating_5based', ''), str(duration), info.get('genre', ''))
+		container_extension = ep.get('container_extension') or 'mp4'
+		play = play_series+str(ep.get('id'))+'.'+container_extension
+		if meta_on:
+			tools.addDirMeta(title, play, 4, cover, cover, plot, releasedate, str(info.get('cast','')).split(), info.get('rating_5based',''), str(duration), info.get('genre',''))
 		else:
-			tools.addDir(title, play_series+str(ser.get('id'))+'.'+container_extension, 4, cover, cover, '')
-
+			tools.addDir(title, play, 4, cover, cover, '')
 def vod(url):
-	if url =="vod":
-		open = tools.OPEN_URL(vod_url)
-	else:
-		url	 = buildcleanurl(url)
-		open = tools.OPEN_URL(url)
-	all_cats = tools.regex_get_all(open,'<channel>','</channel>')
-	for a in all_cats:
-		if '<playlist_url>' in open:
-			name = str(tools.b64(tools.regex_from_to(a,'<title>','</title>'))).replace('?','')
-			url1 = tools.check_protocol(tools.regex_from_to(a,'<playlist_url>','</playlist_url>').replace('<![CDATA[','').replace(']]>',''))
-			if xbmcaddon.Addon().getSetting('hidexxx')=='false':
-				tools.addDir(name,url1,3,icon,background,'')
-			else:
-				if not any(s in name for s in adult_tags):
-					tools.addDir(name,url1,3,icon,background,'')
+	data = tools.OPEN_URL(vod_url if url == 'vod' else buildcleanurl(url))
+	if not data:
+		return
+	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
+	meta_on = xbmcaddon.Addon().getSetting('meta')=='true'
+	try:
+		root = ET.fromstring(data)
+	except Exception:
+		return
+	for ch in root.findall('.//channel'):
+		t = ch.findtext('title', default='')
+		name = str(tools.b64(t)).replace('?', '') if t else ''
+		playlist = ch.findtext('playlist_url')
+		if playlist:
+			url1 = tools.check_protocol(playlist.replace('<![CDATA[','').replace(']]>',''))
+			if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
+				tools.addDir(name, url1, 3, icon, background, '')
 		else:
-			if xbmcaddon.Addon().getSetting('meta') == 'true':
+			thumb = ch.findtext('desc_image', default='')
+			if thumb:
+				thumb = thumb.replace('<![CDATA[','').replace(']]>','')
+			stream = ch.findtext('stream_url', default='')
+			url1 = tools.check_protocol(stream.replace('<![CDATA[','').replace(']]>',''))
+			desc_raw = ch.findtext('description', default='')
+			desc = tools.b64(desc_raw) if desc_raw else ''
+			if meta_on:
 				try:
-					name = tools.b64(tools.regex_from_to(a,'<title>','</title>'))
-					thumb= tools.regex_from_to(a,'<desc_image>','</desc_image>').replace('<![CDATA[','').replace(']]>','')
-					url = tools.check_protocol(tools.regex_from_to(a,'<stream_url>','</stream_url>').replace('<![CDATA[','').replace(']]>',''))
-					desc = tools.b64(tools.regex_from_to(a,'<description>','</description>'))
 					plot = tools.regex_from_to(desc,'PLOT:','\n')
 					cast = tools.regex_from_to(desc,'CAST:','\n')
 					ratin= tools.regex_from_to(desc,'RATING:','\n')
@@ -296,54 +324,43 @@ def vod(url):
 					year = re.compile('-.*?-.*?-(.*?)-',re.DOTALL).findall(year)
 					runt = tools.regex_from_to(desc,'DURATION_SECS:','\n')
 					genre= tools.regex_from_to(desc,'GENRE:','\n')
-					tools.addDirMeta(str(name).replace('[/COLOR][/B].','.[/COLOR][/B]'),url,4,thumb,background,plot,str(year).replace("['","").replace("']",""),str(cast).split(),ratin,runt,genre)
-				except:pass
+					tools.addDirMeta(str(name).replace('[/COLOR][/B].','.[/COLOR][/B]'),url1,4,thumb or background,background,plot,str(year).replace("['","" ).replace("']",""),str(cast).split(),ratin,runt,genre)
+				except:
+					pass
 				xbmcplugin.setContent(int(sys.argv[1]), 'vod')
 			else:
-				name = tools.b64(tools.regex_from_to(a,'<title>','</title>'))
-				thumb= tools.regex_from_to(a,'<desc_image>','</desc_image>').replace('<![CDATA[','').replace(']]>','')
-				url = tools.check_protocol(tools.regex_from_to(a,'<stream_url>','</stream_url>').replace('<![CDATA[','').replace(']]>',''))
-				desc = tools.b64(tools.regex_from_to(a,'<description>','</description>'))
-				tools.addDir(name,url,4,thumb,background,desc)
+				tools.addDir(name,url1,4,thumb or background,background,desc)
 
 def search():
 	if mode==3:
 		return False
 	text = searchdialog()
-	xbmc.log(str(text))
-	open = tools.OPEN_URL(panel_api)
-	parse = json.loads(open)
-	all_chans = tools.regex_get_all(open,'{"num":','}')
-	for a in all_chans:
-		name = tools.regex_from_to(a,'name":"','"')
-		url	 = tools.regex_from_to(a,'"stream_id":"','"')
-		thumb= tools.regex_from_to(a,'stream_icon":"','"').replace(r'\/', '/')
-		stream_type = tools.regex_from_to(a,'"stream_type":"','"').replace(r'\/', '/')
-		container_extension = tools.regex_from_to(a,'container_extension":"','"')
-		if text in name.lower():
-			if xbmcaddon.Addon().getSetting('hidexxx')=='false':
+	if not text:
+		return
+	raw = tools.OPEN_URL(panel_api)
+	if not raw:
+		return
+	try:
+		parse = json.loads(raw)
+	except Exception:
+		return
+	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
+	q = (text or '').lower()
+	channels = parse.get('available_channels', {})
+	for key in channels:
+		a = channels[key]
+		name = a.get('name','')
+		lower = name.lower()
+		if q in lower or (q not in lower and q in name):
+			stream_id = str(a.get('stream_id',''))
+			thumb = (a.get('stream_icon','') or '').replace(r'\/', '/')
+			stream_type = (a.get('stream_type','') or '').replace(r'\/', '/')
+			container_extension = a.get('container_extension','mp4')
+			if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
 				if 'movie' in stream_type:
-					tools.addDir(name,play_movies+url+'.'+container_extension,4,thumb,background,'')
+					tools.addDir(name, play_movies+stream_id+'.'+container_extension, 4, thumb, background, '')
 				if 'live' in stream_type:
-					tools.addDir(name,play_live+url,4,thumb,background,'')
-			else:
-				if not any(s in name for s in adult_tags):
-					if 'movie' in stream_type:
-						tools.addDir(name,play_movies+url+'.'+container_extension,4,thumb,background,'')
-					if 'live' in stream_type:
-						tools.addDir(name,play_live+url,4,thumb,background,'')
-		elif text not in name.lower() and text in name:
-			if xbmcaddon.Addon().getSetting('hidexxx')=='false':
-				if 'movie' in stream_type:
-					tools.addDir(name,play_movies+url+'.'+container_extension,4,thumb,background,'')
-				if 'live' in stream_type:
-					tools.addDir(name,play_live+url,4,thumb,background,'')
-			else:
-				if not any(s in name for s in adult_tags):
-					if 'movie' in stream_type:
-						tools.addDir(name,play_movies+url+'.'+container_extension,4,thumb,background,'')
-					if 'live' in stream_type:
-						tools.addDir(name,play_live+url,4,thumb,background,'')
+					tools.addDir(name, play_live+stream_id, 4, thumb, background, '')
 ######
 #no account to test
 ######
@@ -352,15 +369,22 @@ def catchup():
 	listcatchup()
 
 def listcatchup():
-	open = tools.OPEN_URL(panel_api)
-	all	 = tools.regex_get_all(open,'{"num','direct')
-	for a in all:
-		if '"tv_archive":1' in a:
-			name = tools.regex_from_to(a,'"epg_channel_id":"','"').replace(r'\/', '/')
-			thumb= tools.regex_from_to(a,'"stream_icon":"','"').replace(r'\/', '/')
-			sid	 = tools.regex_from_to(a,'stream_id":"','"')
-			if not name=="":
-				tools.addDir(name,'url',13,thumb,background,sid)
+	raw = tools.OPEN_URL(panel_api)
+	if not raw:
+		return
+	try:
+		parse = json.loads(raw)
+	except Exception:
+		return
+	channels = parse.get('available_channels', {})
+	for key in channels:
+		a = channels[key]
+		if int(a.get('tv_archive', 0)) == 1:
+			name = (a.get('epg_channel_id','') or '').replace(r'\/', '/')
+			thumb = (a.get('stream_icon','') or '').replace(r'\/', '/')
+			sid = str(a.get('stream_id',''))
+			if name:
+				tools.addDir(name, 'url', 13, thumb, background, sid)
 
 def tvarchive(name,description):
 	days = 7
@@ -376,9 +400,9 @@ def tvarchive(name,description):
 		DesC = tools.b64(DesC)
 		format = '%Y-%m-%d %H:%M:%S'
 		try:
-			modend = dtdeep.strptime(end, format)
-			modstart = dtdeep.strptime(start, format)
-		except:
+			modend = datetime.datetime.strptime(end, format)
+			modstart = datetime.datetime.strptime(start, format)
+		except Exception:
 			modend = datetime.datetime(*(time.strptime(end, format)[0:6]))
 			modstart = datetime.datetime(*(time.strptime(start, format)[0:6]))
 		StreamDuration = modend - modstart
@@ -775,10 +799,10 @@ elif mode==13:
 	tvarchive(name,description)
 	
 elif mode==14:
-	listcatchup2()
+	pass
 	
 elif mode==15:
-	ivueint()
+	pass
 	
 elif mode==16:
 	extras()
@@ -796,7 +820,7 @@ elif mode==20:
 	season_list(url)
 
 elif mode=='start':
-	start(signin)
+	start('false')
 
 elif mode=='test':
 	tester()

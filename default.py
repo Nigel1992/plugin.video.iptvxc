@@ -526,6 +526,13 @@ def addonsettings(url,description):
 		tools.gen_m3u(panel_api, M3U_PATH)
 	elif url == "TEST":
 		tester()
+	elif url == "EXTIP":
+		ip = tools.getexternalip()
+		if ip:
+			DIALOG.ok(ADDON_NAME, 'External IP: ' + ip)
+			xbmc.executebuiltin('Container.Refresh')
+		else:
+			DIALOG.ok(ADDON_NAME, 'External IP: unavailable (timeout)')
 
 def adult_set():
 	dialog = DIALOG.yesno(ADDON_NAME,'Would you like to hide the Adult Menu? \nYou can always change this in settings later on.')
@@ -587,7 +594,11 @@ def accountinfo():
 	tools.addDir('[B][COLOR white]Current Connections:[/COLOR][/B] '+ parse['user_info']['active_cons'],'','',icon,background,'')
 	tools.addDir('[B][COLOR white]Allowed Connections:[/COLOR][/B] '+ parse['user_info']['max_connections'],'','',icon,background,'')
 	tools.addDir('[B][COLOR white]Local IP Address:[/COLOR][/B] '+ tools.getlocalip(),'','',icon,background,'')
-	tools.addDir('[B][COLOR white]External IP Address:[/COLOR][/B] '+ tools.getexternalip(),'','',icon,background,'')
+	ip = tools.getexternalip_cached()
+	if ip:
+		tools.addDir('[B][COLOR white]External IP Address:[/COLOR][/B] ' + ip,'','',icon,background,'')
+	else:
+		tools.addDir('Fetch External IP','EXTIP',10,icon,background,'')
 	tools.addDir('[B][COLOR white]Kodi Version:[/COLOR][/B] '+str(KODIV),'','',icon,background,'')
 
 def waitasec(time_to_wait,title,text):

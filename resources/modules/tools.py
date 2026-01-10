@@ -57,6 +57,13 @@ DP  = xbmcgui.DialogProgress()
 COLOR1='white'
 COLOR2='blue'
 dns_text = GET_SET.getSetting(id='DNS')
+# Cache path for quick lookups
+try:
+	ADDON_DATA_DIR = xbmcvfs.translatePath('special://home/userdata/addon_data/%s' % ADDON_ID)
+	if not xbmcvfs.exists(ADDON_DATA_DIR):
+		xbmcvfs.mkdir(ADDON_DATA_DIR)
+except Exception:
+	ADDON_DATA_DIR = None
 
 def check_protocol(url):
 	parsed = urlparse(dns_text)
@@ -140,12 +147,16 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 	return ok
 
 def OPEN_URL(url):
-	req = Request(url)
-	req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0')
-	response = urlopen(req)
-	link=response.read().decode('utf-8')
-	response.close()
-	return link
+	try:
+		req = Request(url)
+		req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0')
+		response = urlopen(req, timeout=4)
+		link = response.read().decode('utf-8')
+		response.close()
+		return link
+	except Exception as e:
+		log('OPEN_URL timeout/error: %s' % e)
+		return ''
 
 def clear_cache():
 	xbmc.log('CLEAR CACHE ACTIVATED')
@@ -193,11 +204,42 @@ def getlocalip():
 	s = s.getsockname()[0]
 	return s
 
+def getexternalip_cached(ttl=600):
+	"""Return cached external IP if fresh; else fetch and cache.
+	ttl in seconds (default 10 minutes)."""
+	import time, json
+	if not ADDON_DATA_DIR:
+		return getexternalip()
+	path = os.path.join(ADDON_DATA_DIR, 'external_ip.json')
+	try:
+		if xbmcvfs.exists(path):
+			with xbmcvfs.File(path, 'r') as f:
+				data = f.read()
+				obj = json.loads(data) if data else {}
+				ip = obj.get('ip')
+				ts = obj.get('ts', 0)
+				if ip and (time.time() - float(ts)) < ttl:
+					return ip
+	except Exception:
+		pass
+	ip = getexternalip()
+	if ip:
+		try:
+			with xbmcvfs.File(path, 'w') as f:
+				f.write(json.dumps({'ip': ip, 'ts': time.time()}))
+		except Exception:
+			pass
+	return ip
+
 def getexternalip():
-	import json 
-	url = urllib.request.urlopen("https://api.ipify.org/?format=json")
-	data = json.loads(url.read().decode())
-	return str(data["ip"])
+	import json
+	try:
+		url = urllib.request.urlopen("https://api.ipify.org/?format=json", timeout=3)
+		data = json.loads(url.read().decode())
+		return str(data.get("ip", ""))
+	except Exception as e:
+		log('getexternalip timeout/error: %s' % e)
+		return ""
 
 def MonthNumToName(num):
 	if '01' in num:

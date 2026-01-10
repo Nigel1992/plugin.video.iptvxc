@@ -26,4 +26,4 @@ jobs:
     
     - name: Run addon checker
       run: |
-        kodi-addon-checker --branch omega plugin.video.iptvxc
+        kodi-addon-checker --branch omega .

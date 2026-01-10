@@ -40,7 +40,7 @@
 	#Kodi Specific
 import xbmcplugin,xbmcgui, xbmcaddon,xbmcvfs
 	#Python Specific
-import os,re,sys,xbmc,json,base64,string,urllib.request,urllib.parse,urllib.error,urllib.parse,shutil,socket
+import os,re,sys,xbmc,json,base64,string,urllib.request,urllib.parse,urllib.error,urllib.parse,shutil,socket,time
 from urllib.parse import urlparse
 	#Addon Specific
 from urllib.request import Request, urlopen
@@ -140,12 +140,36 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 	return ok
 
 def OPEN_URL(url):
-	req = Request(url)
-	req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0')
-	response = urlopen(req)
-	link=response.read().decode('utf-8')
-	response.close()
-	return link
+	# Simple in-memory cache to avoid repeated network calls within a short time window
+	try:
+		cache = OPEN_URL._cache
+		cache_time = OPEN_URL._cache_time
+	except AttributeError:
+		OPEN_URL._cache = {}
+		OPEN_URL._cache_time = {}
+		cache = OPEN_URL._cache
+		cache_time = OPEN_URL._cache_time
+
+	ttl_seconds = 5
+	now = time.time()
+	if url in cache and (now - cache_time.get(url, 0)) < ttl_seconds:
+		return cache[url]
+
+	try:
+		req = Request(url)
+		req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0')
+		response = urlopen(req, timeout=15)
+		link = response.read().decode('utf-8')
+		response.close()
+		cache[url] = link
+		cache_time[url] = now
+		return link
+	except Exception as e:
+		try:
+			xbmc.log('%s-OPEN_URL error for %s: %s' % (ADDON_ID, url, e), 2)
+		except Exception:
+			pass
+		return ''
 
 def clear_cache():
 	xbmc.log('CLEAR CACHE ACTIVATED')

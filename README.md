@@ -71,18 +71,22 @@ Designed with performance, stability, and modern Kodi standards in mind.
 
 ---
 
-## 📝 Release Notes — **v3.2.0**
+## 📝 Release Notes — **v3.3.0**
 
 ### Improvements & Fixes
 
-- **Python 3.13 compatibility**
-  - Converted regex patterns to raw strings to eliminate escape warnings and regressions
-- **Safer URL handling**
-  - `quote_plus(str(...))` prevents `TypeError` when providers return `null` values
-- **Improved season parsing**
-  - Fixes missing Season 1/2 for providers returning empty `seasons` arrays
-  - Fallback parses episodes directly
-  - Supports both **string** and **integer** season keys
+- **Performance: faster browsing**
+  - XML parsing switched to `xml.etree.ElementTree` for Live/VOD
+  - Short-lived caching for panel/API calls reduces repeated network hits
+- **Search & Catch-up reliability**
+  - Replaced regex parsing with `json.loads()` iteration
+  - Lower CPU usage and improved robustness
+- **Series navigation fixes**
+  - Restored missing `series_*` routes
+  - Safer season/episode mapping for mixed provider schemas
+- **Stability**
+  - Removed undefined routes, tightened error handling
+  - Datetime parsing fixes in catch-up archive
 
 ---
 

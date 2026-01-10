@@ -576,7 +576,14 @@ def advancedsettings(device):
 
 def accountinfo():
 	response = tools.OPEN_URL(panel_api)
-	parse = json.loads(response)
+	if not response:
+		tools.addDir('[B][COLOR red]Account Info: Unable to load (timeout/network error)[/COLOR][/B]','','',icon,background,'')
+		return
+	try:
+		parse = json.loads(response)
+	except json.JSONDecodeError:
+		tools.addDir('[B][COLOR red]Account Info: Invalid response from provider[/COLOR][/B]','','',icon,background,'')
+		return
 	expiry	   = parse['user_info']['exp_date']
 	if not expiry=="":
 		expiry	   = datetime.datetime.fromtimestamp(int(expiry)).strftime('%d/%m/%Y - %H:%M')

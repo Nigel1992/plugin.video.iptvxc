@@ -115,7 +115,9 @@ def addDir(name,url,mode,iconimage,fanart,description):
 	ok=True
 	liz=xbmcgui.ListItem(name)
 	liz.setArt({'icon':iconimage, 'thumb':iconimage})
-	liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description,})
+	tag = liz.infoTag('video')
+	tag.setTitle(str(name))
+	tag.setPlot(str(description))
 	liz.setProperty('fanart_image', fanart)
 	if mode==4:
 		liz.setProperty("IsPlayable","true")
@@ -134,7 +136,24 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 	ok=True
 	liz=xbmcgui.ListItem(name)
 	liz.setArt({'icon':iconimage, 'thumb':iconimage})
-	liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description,"Rating":rating,"Year":year,"Duration":runtime,"Cast":cast,"Genre":genre})
+	tag = liz.infoTag('video')
+	tag.setTitle(str(name))
+	tag.setPlot(str(description))
+	try:
+		if rating:
+			tag.setRating(float(rating))
+		if year:
+			tag.setYear(int(year))
+		if runtime:
+			tag.setDuration(int(runtime))
+		if cast and isinstance(cast, list):
+			tag.setCast(cast)
+		if genre:
+			genres = [genre] if isinstance(genre, str) else (genre if isinstance(genre, list) else [])
+			if genres:
+				tag.setGenres(genres)
+	except Exception:
+		pass
 	liz.setProperty('fanart_image', fanart)
 	liz.setProperty("IsPlayable","true")
 	cm = []

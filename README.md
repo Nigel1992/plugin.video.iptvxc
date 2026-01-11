@@ -102,8 +102,8 @@ Designed with performance, stability, and modern Kodi standards in mind.
   - `ListItem.setInfo()` warnings do not affect playback
   - Migration to `InfoTagVideo` is planned
 - **Provider differences**
-  - Providers change links/APIs often; features may work for one user and not another
-  - Open an issue with your host details if something fails so we can add support
+  - Not all providers share the same API/URL structure; features can work on one host and fail on another
+  - Open an issue with your host name/URL and API paths if something breaks so we can add support
 
 ---
 

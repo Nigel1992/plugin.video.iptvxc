@@ -17,20 +17,53 @@ Optimized for **Kodi v21 (Omega)** & **Python 3.13**
 
 ---
 
+**Quick links:** [Latest release](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest) · [Installation](#-installation) · [Troubleshooting](#%EF%B8%8F-troubleshooting) · [Issues](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
+
 ## 🚀 Overview
 
-**XCUI Streams** is a fast, reliable IPTV add-on for Kodi, providing seamless playback for **XC/XCUI-compatible providers**.  
-Designed with performance, stability, and modern Kodi standards in mind.
+Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing, caching, and clean navigation.
+
+## 🔎 At a glance
+
+- ⚡ Performance-first browsing for Live, VOD, Series, Catch-up
+- 🛰️ Resilient XML/JSON parsing tuned for XC/XCUI panels
+- 🧭 Simple router-style navigation with restored series flows
+- 🛠️ Built-in speed test and advanced settings presets
+- 🧠 Defensive handling of inconsistent provider payloads
+- 🎯 Optimized for Kodi v21 (Omega) / Python 3.13
 
 ---
 
 ## ✨ Features
 
-- ⚡ **Fast navigation & playback** for Live TV and VOD  
-- 📺 **TV Series support** with seasons & episodes  
-- ⏪ **Catch-up TV** (provider-dependent)  
-- 🛠️ **Built-in speed test** and advanced configuration helpers  
-- 🧠 Robust handling of inconsistent provider APIs
+- Fast Live/VOD navigation with lightweight caching
+- TV Series with seasons/episodes restored
+- Catch-up TV (provider-dependent)
+- Speed test and advanced settings helpers
+- Robust handling of inconsistent provider APIs
+
+---
+
+## 🏁 Quick Start
+
+1) Install from the latest zip: https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest  
+2) Open Kodi → Add-ons → Install from zip → select `plugin.video.iptvxc-<version>.zip`  
+3) Enter provider credentials in Settings → Accounts  
+4) Browse Live / VOD / Series / Catch-up
+
+## 📋 What you’ll need
+
+- Kodi 21 (Omega) or newer
+- XC/XCUI-compatible account (host, username, password)
+- Network access to your provider’s panel
+
+## 🧭 Navigation map
+
+- Live TV → Categories → Channels → Play
+- VOD → Categories → Titles → Play
+- Series → Show → Season → Episode → Play
+- Catch-up → Channel → Program → Play (if provider supports)
+- Tools → Speed Test / Advanced settings presets
 
 ---
 

@@ -96,13 +96,14 @@ Designed with performance, stability, and modern Kodi standards in mind.
 - **No content visible?**
   - Verify provider credentials
   - Check network connectivity
-- **Different results across users**
-  - Provider links and APIs change frequently; some routes or streams may work for one account/provider and not for another
 - **Missing metadata**
   - Normal for some providers
 - **Deprecation warnings**
   - `ListItem.setInfo()` warnings do not affect playback
   - Migration to `InfoTagVideo` is planned
+- **Provider differences**
+  - Providers change links/APIs often; features may work for one user and not another
+  - Open an issue with your host details if something fails so we can add support
 
 ---
 

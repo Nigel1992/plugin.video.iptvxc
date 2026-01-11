@@ -96,6 +96,8 @@ Designed with performance, stability, and modern Kodi standards in mind.
 - **No content visible?**
   - Verify provider credentials
   - Check network connectivity
+- **Different results across users**
+  - Provider links and APIs change frequently; some routes or streams may work for one account/provider and not for another
 - **Missing metadata**
   - Normal for some providers
 - **Deprecation warnings**

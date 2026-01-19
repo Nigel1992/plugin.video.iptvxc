@@ -69,4 +69,15 @@ body:
     id: logs
     attributes:
       label: Logs / additional information
-      description: Paste any relevant logs or provide links to log files
+      description: |
+        Paste any relevant logs or provide links to log files.
+        
+        **How to get your Kodi log file:**
+        1. Enable debug logging: Go to **Settings > System > Logging > Enable debug logging**.
+        2. Reproduce the issue.
+        3. Find your log file:
+           - **Android/Firestick:** `/sdcard/Android/data/org.xbmc.kodi/files/.kodi/temp/kodi.log`
+           - **LibreELEC/CoreELEC:** `/storage/.kodi/temp/kodi.log`
+           - **Windows:** `C:\Users\<YourUser>\AppData\Roaming\Kodi\kodi.log`
+           - **Linux:** `~/.kodi/temp/kodi.log`
+        4. Upload the log to https://paste.kodi.tv or attach it here.

@@ -22,27 +22,3 @@ body:
     attributes:
       label: Environment
       description: Device, Kodi version, add-on version, and any other relevant info
-name: "Question"
-description: "Ask a question about using the add-on."
-title: "[QUESTION] ${{ inputs.short_description }}"
-labels: [question]
-body:
-  - type: input
-    id: short_description
-    attributes:
-      label: Short description
-      description: One-line summary of your question
-      required: true
-
-  - type: textarea
-    id: question_details
-    attributes:
-      label: Question details
-      description: Provide details about your question, context, and what you've tried
-      required: true
-
-  - type: textarea
-    id: environment
-    attributes:
-      label: Environment
-      description: Device, Kodi version, add-on version, and any other relevant info

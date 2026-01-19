@@ -43,6 +43,7 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 - Fast Live/VOD navigation with lightweight caching
 - TV Series with seasons/episodes restored
 - Catch-up TV (provider-dependent)
+- **🎬 Trakt.tv Integration** - Auto-scrobble, sync watchlist, view stats
 - Speed test and advanced settings helpers
 - Robust handling of inconsistent provider APIs
 
@@ -93,6 +94,11 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 3. **Configure**
    - Open the add-on
    - Enter your provider credentials in **Settings**
+
+4. **Optional: Setup Trakt.tv** _(2 minutes - see [TRAKT_QUICKSTART.md](TRAKT_QUICKSTART.md))_
+   - Enable Trakt in settings
+   - Sign in with simple activation code
+   - Track everything you watch automatically
 
 ---
 

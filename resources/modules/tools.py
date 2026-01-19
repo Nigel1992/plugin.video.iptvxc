@@ -123,7 +123,18 @@ def addDir(name,url,mode,iconimage,fanart,description):
 	xbmcplugin.endOfDirectory
 	
 def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runtime,genre):
-	u=sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(iconimage))+"&description="+urllib.parse.quote_plus(str(description))
+	# Extract TMDB ID from description if available
+	tmdb_id = ''
+	if description:
+		# Try URL-decoded pattern first (TMDB_ID: 1525091)
+		tmdb_match = re.search(r'TMDB_ID[:\s]+(\d+)', description)
+		if tmdb_match:
+			tmdb_id = tmdb_match.group(1)
+			xbmc.log('[IPTVXC] Extracted TMDB ID: %s from description' % tmdb_id, xbmc.LOGDEBUG)
+		else:
+			xbmc.log('[IPTVXC] No TMDB ID found in description (first 200 chars): %s' % description[:200], xbmc.LOGDEBUG)
+	
+	u=sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(iconimage))+"&description="+urllib.parse.quote_plus(str(description))+"&year="+urllib.parse.quote_plus(str(year))+"&tmdb_id="+urllib.parse.quote_plus(str(tmdb_id))
 	ok=True
 	liz=xbmcgui.ListItem(name)
 	liz.setArt({'icon':iconimage, 'thumb':iconimage})
@@ -132,6 +143,20 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 	liz.setProperty("IsPlayable","true")
 	cm = []
 	cm.append(('Movie Information', 'XBMC.Action(Info)'))
+	
+	# Add Trakt context menu items if enabled
+	try:
+		if GET_SET.getSetting('trakt_enabled') == 'true':
+			# Add to Trakt Watchlist
+			trakt_watchlist_url = sys.argv[0]+"?url=TRAKT_WATCHLIST&mode=23&name="+urllib.parse.quote_plus(str(name))+"&year="+str(year)
+			cm.append(('Add to Trakt Watchlist', 'RunPlugin('+trakt_watchlist_url+')'))
+			
+			# Mark as Watched on Trakt
+			trakt_watched_url = sys.argv[0]+"?url=TRAKT_WATCHED&mode=23&name="+urllib.parse.quote_plus(str(name))+"&year="+str(year)
+			cm.append(('Mark as Watched on Trakt', 'RunPlugin('+trakt_watched_url+')'))
+	except:
+		pass
+	
 	liz.addContextMenuItems(cm,replaceItems=True)
 	if mode==19 or mode==20:
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True)

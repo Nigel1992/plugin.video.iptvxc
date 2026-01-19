@@ -1,15 +1,101 @@
-  - type: textarea
-    id: troubleshooting
-    attributes:
-      label: Troubleshooting steps tried
-      description: |
-        Please describe any troubleshooting steps you have tried (e.g. reinstalling, clearing cache, using a different device, etc.).
+  name: "Bug report"
+  description: "Report a problem with the add-on."
+  title: "[BUG] -"
+  labels: [bug]
+  assignees:
+    - Nigel1992
+  body:
+    - type: input
+      id: short_description
+      attributes:
+        label: Short description
+        description: A one-line summary of the issue
+        placeholder: "e.g. Playback crashes when resuming"
+      validations:
+        required: true
+
+    - type: textarea
+      id: steps_to_reproduce
+      attributes:
+        label: Steps to reproduce
+        description: Describe the steps needed to reproduce the issue (one per line)
+        placeholder: "1. Open add-on\n2. Play channel X\n3. Seek to ..."
+      validations:
+        required: true
+
+    - type: textarea
+      id: expected_behavior
+      attributes:
+        label: Expected behavior
+        description: What you expected to happen
+      validations:
+        required: true
+
+    - type: textarea
+      id: observed_behavior
+      attributes:
+        label: Observed behavior
+        description: What actually happened (include error messages if any)
+      validations:
+        required: true
+
+    - type: dropdown
+      id: kodi_version
+      attributes:
+        label: Kodi Version (Omega 21.x)
+        description: Select the Kodi version where you saw the issue
+        options:
+          - "21.0"
+          - "21.1"
+          - "Other"
+      validations:
+        required: true
+
+    - type: input
+      id: device
+      attributes:
+        label: Device
+        description: Device where issue occurred (e.g. Firestick, Shield, LibreELEC)
+      validations:
+        required: true
+
+    - type: input
+      id: os
+      attributes:
+        label: Device OS
+        description: e.g. Android 11, LibreELEC 10
+      validations:
+        required: true
+
+    - type: textarea
+      id: troubleshooting
+      attributes:
+        label: Troubleshooting steps tried
+        description: |
+          Please describe any troubleshooting steps you have tried (e.g. reinstalling, clearing cache, using a different device, etc.).
         
-        If you are reporting a menu not loading or a regression from a previous version, please:
-        - Confirm your server/API is online and returning data.
-        - Try with a different account or device if possible.
-        - Attach a debug log (see instructions above).
-        - State if this worked in a previous version (and which one).
+          If you are reporting a menu not loading or a regression from a previous version, please:
+          - Confirm your server/API is online and returning data.
+          - Try with a different account or device if possible.
+          - Attach a debug log (see instructions above).
+          - State if this worked in a previous version (and which one).
+
+    - type: textarea
+      id: logs
+      attributes:
+        label: Logs / additional information
+        description: |
+          Paste any relevant logs or provide links to log files.
+        
+          **How to get your Kodi log file:**
+          1. Enable debug logging: Go to **Settings > System > Logging > Enable debug logging**.
+          2. Reproduce the issue.
+          3. Find your log file:
+             - **Android/Firestick:** `/sdcard/Android/data/org.xbmc.kodi/files/.kodi/temp/kodi.log`
+             - **LibreELEC/CoreELEC:** `/storage/.kodi/temp/kodi.log`
+             - **Windows:** `C:\Users\<YourUser>\AppData\Roaming\Kodi\kodi.log`
+             - **Linux:** `~/.kodi/temp/kodi.log`
+          4. Upload the log to https://paste.kodi.tv or attach it here.
 name: "Bug report"
 description: "Report a problem with the add-on."
 title: "[BUG] -"

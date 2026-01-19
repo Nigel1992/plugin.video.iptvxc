@@ -1,6 +1,6 @@
 name: "Question"
 description: "Ask a question about using the add-on."
-title: "[QUESTION] ${{ inputs.short_description }}"
+title: "[QUESTION] -"
 labels: [question]
 body:
   - type: input

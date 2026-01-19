@@ -1,6 +1,6 @@
 name: "Feature request"
 description: "Suggest an idea or enhancement for the add-on."
-title: "[FEATURE] ${{ inputs.short_description }}"
+title: "[FEATURE] -"
 labels: [enhancement]
 body:
   - type: input

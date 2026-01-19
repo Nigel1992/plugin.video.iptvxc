@@ -1,6 +1,6 @@
 name: "Bug report"
 description: "Report a problem with the add-on."
-title: "[BUG] ${{ inputs.short_description }}"
+title: "[BUG] -"
 labels: [bug]
 body:
   - type: input

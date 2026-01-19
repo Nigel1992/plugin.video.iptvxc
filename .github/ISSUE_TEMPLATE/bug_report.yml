@@ -58,3 +58,8 @@ body:
     attributes:
       label: Logs / additional information
       description: Paste any relevant logs or provide links to log files
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / additional information
+      description: Paste any relevant logs or provide links to log files

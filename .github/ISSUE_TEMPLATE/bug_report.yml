@@ -2,6 +2,8 @@ name: "Bug report"
 description: "Report a problem with the add-on."
 title: "[BUG] -"
 labels: [bug]
+assignees:
+  - Nigel1992
 body:
   - type: input
     id: short_description

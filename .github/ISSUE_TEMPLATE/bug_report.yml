@@ -37,9 +37,9 @@ body:
       label: Kodi Version (Omega 21.x)
       description: Select the Kodi version where you saw the issue
       options:
-        - 21.0
-        - 21.1
-        - Other
+        - "21.0"
+        - "21.1"
+        - "Other"
 
   - type: input
     id: device
@@ -58,7 +58,7 @@ body:
     attributes:
       label: Logs / additional information
       description: Paste any relevant logs or provide links to log files
-  - type: textarea
+
     id: logs
     attributes:
       label: Logs / additional information

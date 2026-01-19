@@ -1,3 +1,15 @@
+  - type: textarea
+    id: troubleshooting
+    attributes:
+      label: Troubleshooting steps tried
+      description: |
+        Please describe any troubleshooting steps you have tried (e.g. reinstalling, clearing cache, using a different device, etc.).
+        
+        If you are reporting a menu not loading or a regression from a previous version, please:
+        - Confirm your server/API is online and returning data.
+        - Try with a different account or device if possible.
+        - Attach a debug log (see instructions above).
+        - State if this worked in a previous version (and which one).
 name: "Bug report"
 description: "Report a problem with the add-on."
 title: "[BUG] -"

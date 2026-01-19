@@ -8,6 +8,7 @@ body:
     attributes:
       label: Short description
       description: A one-line summary of your request
+    validations:
       required: true
 
   - type: textarea
@@ -21,6 +22,7 @@ body:
     attributes:
       label: Proposed solution
       description: Describe the feature you'd like and how it should work
+    validations:
       required: true
 
   - type: textarea

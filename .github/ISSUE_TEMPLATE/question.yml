@@ -8,6 +8,7 @@ body:
     attributes:
       label: Short description
       description: One-line summary of your question
+    validations:
       required: true
 
   - type: textarea
@@ -15,6 +16,7 @@ body:
     attributes:
       label: Question details
       description: Provide details about your question, context, and what you've tried
+    validations:
       required: true
 
   - type: textarea

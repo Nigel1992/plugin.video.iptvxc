@@ -1,0 +1,42 @@
+name: "Feature request"
+description: "Suggest an idea or enhancement for the add-on."
+title: "[FEATURE] ${{ inputs.short_description }}"
+labels: [enhancement]
+body:
+  - type: input
+    id: short_description
+    attributes:
+      label: Short description
+      description: A one-line summary of your request
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the problem you want solved (if applicable)
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed solution
+      description: Describe the feature you'd like and how it should work
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe any alternatives you considered
+
+  - type: input
+    id: use_case
+    attributes:
+      label: Use case / who benefits
+      description: Brief note about who would benefit from this feature
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Links, mockups, or other context that helps explain the request

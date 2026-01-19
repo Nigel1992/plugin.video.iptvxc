@@ -1,0 +1,60 @@
+name: "Bug report"
+description: "Report a problem with the add-on."
+title: "[BUG] ${{ inputs.short_description }}"
+labels: [bug]
+body:
+  - type: input
+    id: short_description
+    attributes:
+      label: Short description
+      description: A one-line summary of the issue
+      placeholder: "e.g. Playback crashes when resuming"
+      required: true
+
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Describe the steps needed to reproduce the issue (one per line)
+      placeholder: "1. Open add-on\n2. Play channel X\n3. Seek to ..."
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen
+
+  - type: textarea
+    id: observed_behavior
+    attributes:
+      label: Observed behavior
+      description: What actually happened (include error messages if any)
+
+  - type: dropdown
+    id: kodi_version
+    attributes:
+      label: Kodi Version (Omega 21.x)
+      description: Select the Kodi version where you saw the issue
+      options:
+        - 21.0
+        - 21.1
+        - Other
+
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Device where issue occurred (e.g. Firestick, Shield, LibreELEC)
+
+  - type: input
+    id: os
+    attributes:
+      label: Device OS
+      description: e.g. Android 11, LibreELEC 10
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / additional information
+      description: Paste any relevant logs or provide links to log files

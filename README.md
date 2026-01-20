@@ -91,13 +91,8 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
    - Select `plugin.video.iptvxc-<version>.zip`
 
 3. **Configure**
-   - Open the add-on
-   - Enter your provider credentials in **Settings**
-
-4. **Optional: Setup Trakt.tv** _(2 minutes - see [TRAKT_QUICKSTART.md](TRAKT_QUICKSTART.md))_
-   - Enable Trakt in settings
-   - Sign in with simple activation code
-   - Track everything you watch automatically
+  - Open the add-on
+  - Enter your provider credentials in **Settings**
 
 ---
 

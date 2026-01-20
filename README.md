@@ -43,10 +43,6 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 - Fast Live/VOD navigation with lightweight caching
 - TV Series with seasons/episodes restored
 - Catch-up TV (provider-dependent)
-
----
-
-**Note:** Trakt integration is temporarily removed and will return in a future release.
 - Speed test and advanced settings helpers
 - Robust handling of inconsistent provider APIs
 

@@ -45,7 +45,7 @@ import urllib.parse,urllib.error,json,datetime,zipfile,shutil
 import xml.etree.ElementTree as ET
 from datetime import date
 	#Addon Specific
-from resources.modules import control,tools,popup,speedtest,trakt
+from resources.modules import control,tools,popup,speedtest
 ##########################=VARIABLES=#######################################
 ADDON = xbmcaddon.Addon()
 ADDONPATH = ADDON.getAddonInfo("path")
@@ -144,7 +144,7 @@ def home():
 		tools.addDir('TV Guide','pvr',7,icontvguide,background,'')
 	tools.addDir('Catchup TV','url',12,iconcatchup,background,'')
 	tools.addDir('Search','url',5,iconsearch,background,'')
-	tools.addDir('Trakt.tv','url',21,icon,background,'')
+	# Trakt.tv integration removed
 	tools.addDir('Settings','url',8,iconsettings,background,'')
 	tools.addDir('Extras','url',16,iconextras,background,'')
 
@@ -440,50 +440,7 @@ def stream_video(url):
 	liz.setPath(str(url))
 	xbmcplugin.setResolvedUrl(int(sys.argv[1]), True, liz)
 	
-	# Trakt scrobbling (only if we have enough info for movies)
-	if ADDON.getSetting('trakt_enabled') == 'true' and ADDON.getSetting('trakt_scrobble') == 'true':
-		try:
-			media_type = None
-			item_data = {}
-			
-			# Use globals set from URL params if available
-			title_raw = name if 'name' in globals() else ''
-			media_year_raw = year if 'year' in globals() else ''
-			media_tmdb_id = tmdb_id if 'tmdb_id' in globals() else ''
-			
-			# Fallbacks
-			if not title_raw:
-				title_raw = xbmc.getInfoLabel('ListItem.Title')
-			
-			cleaned_title = trakt.clean_title(title_raw)
-			normalized_year = trakt.normalize_year(media_year_raw)
-			if not normalized_year:
-				normalized_year = trakt.guess_year_from_title(cleaned_title)
-			
-			# Detect media type from URL structure used by XC
-			if '/movie/' in url:
-				media_type = 'movie'
-				item_data = {
-					'title': cleaned_title,
-					'year': normalized_year
-				}
-				# Add TMDB ID if available
-				if media_tmdb_id:
-					item_data['tmdb_id'] = media_tmdb_id
-					xbmc.log('[IPTVXC] Trakt using TMDB ID: %s for %s' % (media_tmdb_id, cleaned_title), xbmc.LOGDEBUG)
-				else:
-					xbmc.log('[IPTVXC] No TMDB ID available for: %s' % cleaned_title, xbmc.LOGWARNING)
-			elif '/series/' in url:
-				# Series support is incomplete in this addon (missing season/episode ids)
-				media_type = None
-			
-			# Only start monitoring when we have a recognized media type and title
-			if media_type and item_data.get('title'):
-				trakt.start_monitoring(media_type, item_data)
-			else:
-				xbmc.log('[IPTVXC] Trakt skipped: insufficient metadata (type=%s, title=%s, year=%s)' % (media_type, item_data.get('title',''), item_data.get('year')), xbmc.LOGDEBUG)
-		except Exception as e:
-			xbmc.log('[IPTVXC] Trakt error: %s' % str(e), xbmc.LOGERROR)
+	# Trakt scrobbling removed
 
 def searchdialog():
 	search = control.inputDialog(heading='Search '+ADDON_NAME+':')
@@ -492,22 +449,7 @@ def searchdialog():
 	else:
 		return search
 
-def traktmenu():
-	trakt_api = trakt.TraktAPI()
-	if ADDON.getSetting('trakt_enabled') == 'true' and trakt_api.access_token:
-		STATUS = '[B][COLOR lime]Connected[/COLOR][/B]'
-	else:
-		STATUS = '[B][COLOR red]Not Connected[/COLOR][/B]'
-	
-	tools.addDir('Status: %s' % STATUS,'',0,icon,background,'')
-	
-	if not trakt_api.access_token:
-		tools.addDir('[B][COLOR yellow]Sign In to Trakt[/COLOR][/B]','TRAKT_AUTH',22,icon,background,'')
-	else:
-		tools.addDir('View User Stats','TRAKT_STATS',22,icon,background,'')
-		tools.addDir('Sign Out','TRAKT_REVOKE',22,icon,background,'')
-	
-	tools.addDir('Trakt Settings','TRAKT_SETTINGS',22,icon,background,'')
+
 
 def settingsmenu():
 	if xbmcaddon.Addon().getSetting('meta')=='true':
@@ -615,28 +557,7 @@ def addonsettings(url,description):
 	elif url == "TEST":
 		tester()
 
-def trakt_actions(action):
-	trakt_api = trakt.TraktAPI()
-	if action == 'TRAKT_AUTH':
-		success = trakt_api.authorize(from_settings=False)
-		xbmc.executebuiltin('Container.Refresh')
-	elif action == 'TRAKT_REVOKE':
-		if DIALOG.yesno('Sign Out', 'Are you sure you want to sign out of Trakt?', 'Your viewing history will no longer be tracked.'):
-			trakt_api.revoke_authorization()
-			xbmc.executebuiltin('Container.Refresh')
-	elif action == 'TRAKT_STATS':
-		stats = trakt_api.get_user_stats()
-		if stats:
-			msg = '[B]Your Trakt Statistics[/B]\n\n'
-			msg += 'Movies Watched: [COLOR yellow]%s[/COLOR]\n' % stats.get('movies', {}).get('watched', 0)
-			msg += 'Episodes Watched: [COLOR yellow]%s[/COLOR]\n' % stats.get('episodes', {}).get('watched', 0)
-			msg += 'Shows Collected: [COLOR yellow]%s[/COLOR]' % stats.get('shows', {}).get('collected', 0)
-			DIALOG.ok('Trakt Stats', msg)
-		else:
-			DIALOG.ok('Trakt Stats', 'Failed to retrieve stats.\nMake sure you are signed in.')
-	elif action == 'TRAKT_SETTINGS':
-		xbmc.executebuiltin('Addon.OpenSettings(%s)' % ADDON_ID)
-		xbmc.executebuiltin('SetFocus(-99)') # Focus on Trakt category
+
 
 def adult_set():
 	dialog = DIALOG.yesno(ADDON_NAME,'Would you like to hide the Adult Menu? \nYou can always change this in settings later on.')
@@ -915,31 +836,13 @@ elif mode==19:
 elif mode==20:
 	season_list(url)
 
-elif mode==21:
-	traktmenu()
 
-elif mode==22:
-	trakt_actions(url)
 
-elif mode==23:
-	# Trakt context menu actions
-	trakt_api = trakt.TraktAPI()
-	if url == 'TRAKT_WATCHLIST':
-		item_data = {'title': name, 'year': year}
-		trakt_api.add_to_watchlist('movie', item_data)
-	elif url == 'TRAKT_WATCHED':
-		item_data = {'title': name, 'year': year}
-		trakt_api.mark_as_watched('movie', item_data)
 
-elif mode==24:
-	# Trakt settings actions
-	trakt_api = trakt.TraktAPI()
-	if url == 'SIGNIN':
-		trakt_api.authorize(from_settings=True)
-	elif url == 'SIGNOUT':
-		if DIALOG.yesno('Sign Out', 'Sign out of Trakt?', 'Your viewing history will no longer be tracked.'):
-			trakt_api.revoke_authorization()
-			DIALOG.notification('Trakt', 'Signed out successfully', xbmcgui.ICON_INFO, 2000)
+
+
+
+
 
 elif mode=='start':
 	start('false')

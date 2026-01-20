@@ -8,15 +8,4 @@
 		<setting id="xxx_pwset" type="bool" label="Password Lock Adult Content" default="false"/>
 		<setting id="xxx_pw" option = 'hidden' type="text" label="Adult Content Password (Default: 1234)" default="1234"/>
 </category>
-<category label="Trakt.tv">
-		<setting id="trakt_enabled" type="bool" label="Enable Trakt.tv" default="false"/>
-		<setting id="trakt_signin" type="action" label="Sign In to Trakt" action="RunPlugin(plugin://plugin.video.iptvxc/?mode=24&amp;url=SIGNIN)" enable="eq(-1,true)" visible="eq(-1,true)"/>
-		<setting id="trakt_signout" type="action" label="Sign Out" action="RunPlugin(plugin://plugin.video.iptvxc/?mode=24&amp;url=SIGNOUT)" enable="!eq(-2,false)" visible="!eq(-2,false)"/>
-		<setting id="trakt_access_token" type="text" label="Access Token (Auto-filled)" default="" visible="false"/>
-		<setting id="trakt_refresh_token" type="text" label="Refresh Token (Auto-filled)" default="" visible="false"/>
-		<setting type="sep"/>
-		<setting id="trakt_scrobble" type="bool" label="Auto-Scrobble Playback" default="true" enable="eq(-6,true)"/>
-		<setting id="trakt_sync_watchlist" type="bool" label="Sync Watchlist" default="false" enable="eq(-7,true)"/>
-		<setting id="trakt_sync_watched" type="bool" label="Sync Watched Status" default="true" enable="eq(-8,true)"/>
-</category>
 </settings>

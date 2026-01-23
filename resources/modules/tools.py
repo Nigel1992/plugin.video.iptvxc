@@ -416,124 +416,121 @@ def get_working_endpoint(base_url, user, password, timeout=10, retries=2, treat_
 	if notify:
 		xbmcgui.Dialog().ok(ADDON_NAME, msg)
 	return None
+# -- Account expiry helpers --
+import threading, datetime
 
-+# -- Account expiry helpers --
-+import threading, datetime
-+
-+def get_account_expiry_info(base_url=None, user=None, password=None, timeout=8):
-+    """Return dict with expiry information: {'days': int|None, 'expiry_ts': int|None, 'unlimited': bool} or {'error': '...'}"""
-+    # fallback to settings when values not provided
-+    try:
-+        if base_url is None:
-+            base_url = GET_SET.getSetting('DNS')
-+        if user is None:
-+            user = GET_SET.getSetting('Username')
-+        if password is None:
-+            password = GET_SET.getSetting('Password')
-+    except Exception:
-+        pass
-+
-+    if not (base_url and user and password):
-+        return {'error': 'missing_credentials'}
-+
-+    try:
-+        res = get_working_endpoint(base_url, user, password, timeout=timeout, retries=1, treat_512_as_invalid=False, notify=False)
-+    except Exception as e:
-+        return {'error': f'endpoint_error: {e}'}
-+
-+    if not res:
-+        return {'error': 'no_endpoint'}
-+
-+    if res.get('type') != 'json':
-+        return {'error': 'no_json'}
-+
-+    data = res.get('data') or {}
-+    ui = data.get('user_info', {})
-+    exp = ui.get('exp_date', '')
-+    try:
-+        if not exp or str(exp).strip() == '' or int(exp) == 0:
-+            return {'unlimited': True}
-+        ts = int(exp)
-+        now = int(time.time())
-+        days = int((ts - now) / 86400)
-+        return {'days': days, 'expiry_ts': ts, 'unlimited': False}
-+    except Exception as e:
-+        return {'error': f'parse_error: {e}'}
-+
-+
-+def notify_account_expiry(threshold_days=None, show_dialog=False):
-+    """Check account expiry and notify user if within threshold.
-+
-+    - threshold_days: integer override; if None read from settings
-+    - show_dialog: if True use dialog for urgent messages; otherwise use LogNotify
-+    """
-+    try:
-+        enabled = GET_SET.getSetting('expiry_notify_enabled') == 'true'
-+        if not enabled:
-+            return False
-+        if threshold_days is None:
-+            try:
-+                threshold_days = int(GET_SET.getSetting('expiry_notify_days'))
-+            except Exception:
-+                threshold_days = 7
-+    except Exception:
-+        return False
-+
-+    info = get_account_expiry_info()
-+    if info.get('unlimited'):
-+        return False
-+    if 'error' in info:
-+        # don't notify on transient errors
-+        return False
-+
-+    days = info.get('days')
-+    ts = info.get('expiry_ts')
-+    if days is None:
-+        return False
-+
-+    date_str = datetime.datetime.fromtimestamp(int(ts)).strftime('%d/%m/%Y') if ts else 'Unknown'
-+
-+    if days < 0:
-+        msg = f'Account expired {-days} days ago on {date_str}'
-+        if show_dialog:
-+            xbmcgui.Dialog().ok(ADDON_NAME, msg)
-+        else:
-+            LogNotify(f"{ADDON_NAME} - Account Expired", msg, times=5000)
-+        return True
-+
-+    if days <= threshold_days:
-+        msg = f'Account expires in {days} day(s) on {date_str}'
-+        # Use LogNotify for non-intrusive notice; show dialog if small
-+        if days <= 2 or show_dialog:
-+            xbmcgui.Dialog().ok(ADDON_NAME, msg)
-+        else:
-+            LogNotify(f"{ADDON_NAME} - Expiry Notice", msg, times=5000)
-+        return True
-+
-+    return False
-+
-+
-+def start_expiry_background_check(interval_hours=24):
-+    """Starts a background thread that periodically checks expiry while addon runs.
-+
-+    Thread stores flag in its .running attribute to allow future stop (not currently exposed in UI).
-+    """
-+    def _worker():
-+        t = threading.current_thread()
-+        while getattr(t, 'running', True):
-+            try:
-+                notify_account_expiry()
-+            except Exception:
-+                pass
-+            # sleep in 1-second increments to remain responsive to possible stop flag changes
-+            for _ in range(max(1, int(interval_hours * 3600))):
-+                if not getattr(t, 'running', True):
-+                    break
-+                xbmc.sleep(1000)
-+
-+    thr = threading.Thread(target=_worker, name='IPTVXC-ExpiryCheck', daemon=True)
-+    thr.running = True
-+    thr.start()
-+    return thr
-*** End Patch
-		return False
+def get_account_expiry_info(base_url=None, user=None, password=None, timeout=8):
+    """Return dict with expiry information: {'days': int|None, 'expiry_ts': int|None, 'unlimited': bool} or {'error': '...'}"""
+    # fallback to settings when values not provided
+    try:
+        if base_url is None:
+            base_url = GET_SET.getSetting('DNS')
+        if user is None:
+            user = GET_SET.getSetting('Username')
+        if password is None:
+            password = GET_SET.getSetting('Password')
+    except Exception:
+        pass
+
+    if not (base_url and user and password):
+        return {'error': 'missing_credentials'}
+
+    try:
+        res = get_working_endpoint(base_url, user, password, timeout=timeout, retries=1, treat_512_as_invalid=False, notify=False)
+    except Exception as e:
+        return {'error': f'endpoint_error: {e}'}
+
+    if not res:
+        return {'error': 'no_endpoint'}
+
+    if res.get('type') != 'json':
+        return {'error': 'no_json'}
+
+    data = res.get('data') or {}
+    ui = data.get('user_info', {})
+    exp = ui.get('exp_date', '')
+    try:
+        if not exp or str(exp).strip() == '' or int(exp) == 0:
+            return {'unlimited': True}
+        ts = int(exp)
+        now = int(time.time())
+        days = int((ts - now) / 86400)
+        return {'days': days, 'expiry_ts': ts, 'unlimited': False}
+    except Exception as e:
+        return {'error': f'parse_error: {e}'}
+
+
+def notify_account_expiry(threshold_days=None, show_dialog=False):
+    """Check account expiry and notify user if within threshold.
+
+    - threshold_days: integer override; if None read from settings
+    - show_dialog: if True use dialog for urgent messages; otherwise use LogNotify
+    """
+    try:
+        enabled = GET_SET.getSetting('expiry_notify_enabled') == 'true'
+        if not enabled:
+            return False
+        if threshold_days is None:
+            try:
+                threshold_days = int(GET_SET.getSetting('expiry_notify_days'))
+            except Exception:
+                threshold_days = 7
+    except Exception:
+        return False
+
+    info = get_account_expiry_info()
+    if info.get('unlimited'):
+        return False
+    if 'error' in info:
+        # don't notify on transient errors
+        return False
+
+    days = info.get('days')
+    ts = info.get('expiry_ts')
+    if days is None:
+        return False
+
+    date_str = datetime.datetime.fromtimestamp(int(ts)).strftime('%d/%m/%Y') if ts else 'Unknown'
+
+    if days < 0:
+        msg = f'Account expired {-days} days ago on {date_str}'
+        if show_dialog:
+            xbmcgui.Dialog().ok(ADDON_NAME, msg)
+        else:
+            LogNotify(f"{ADDON_NAME} - Account Expired", msg, times=5000)
+        return True
+
+    if days <= threshold_days:
+        msg = f'Account expires in {days} day(s) on {date_str}'
+        # Use LogNotify for non-intrusive notice; show dialog if small
+        if days <= 2 or show_dialog:
+            xbmcgui.Dialog().ok(ADDON_NAME, msg)
+        else:
+            LogNotify(f"{ADDON_NAME} - Expiry Notice", msg, times=5000)
+        return True
+
+    return False
+
+
+def start_expiry_background_check(interval_hours=24):
+    """Starts a background thread that periodically checks expiry while addon runs.
+
+    Thread stores flag in its .running attribute to allow future stop (not currently exposed in UI).
+    """
+    def _worker():
+        t = threading.current_thread()
+        while getattr(t, 'running', True):
+            try:
+                notify_account_expiry()
+            except Exception:
+                pass
+            # sleep in 1-second increments to remain responsive to possible stop flag changes
+            for _ in range(max(1, int(interval_hours * 3600))):
+                if not getattr(t, 'running', True):
+                    break
+                xbmc.sleep(1000)
+
+    thr = threading.Thread(target=_worker, name='IPTVXC-ExpiryCheck', daemon=True)
+    thr.running = True
+    thr.start()
+    return thr

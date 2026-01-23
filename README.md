@@ -109,24 +109,10 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 
 ---
 
-## 📝 Release Notes — **v3.3.0**
-
-### Improvements & Fixes
-
-- **Performance: faster browsing**
-  - XML parsing switched to `xml.etree.ElementTree` for Live/VOD
-  - Short-lived caching for panel/API calls reduces repeated network hits
-- **Search & Catch-up reliability**
-  - Replaced regex parsing with `json.loads()` iteration
-  - Lower CPU usage and improved robustness
-- **Series navigation fixes**
-  - Restored missing `series_*` routes
-  - Safer season/episode mapping for mixed provider schemas
-- **Stability**
-  - Removed undefined routes, tightened error handling
-  - Datetime parsing fixes in catch-up archive
 
 ---
+
+For a complete list of changes and release history, see [CHANGELOG.md](CHANGELOG.md).
 
 ## 🛠️ Troubleshooting
 

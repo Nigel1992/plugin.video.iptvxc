@@ -186,10 +186,14 @@ def OPEN_URL(url):
 		response = urlopen(req, timeout=15)
 		link = response.read().decode('utf-8')
 		response.close()
+		# Clear any previous error
+		OPEN_URL._last_error = None
 		cache[url] = link
 		cache_time[url] = now
 		return link
 	except Exception as e:
+		# Store last exception for callers to inspect (useful for HTTP status handling)
+		OPEN_URL._last_error = e
 		try:
 			xbmc.log('%s-OPEN_URL error for %s: %s' % (ADDON_ID, url, e), 2)
 		except Exception:
@@ -308,6 +312,110 @@ def gen_m3u(url, path):
 				if DP.iscanceled(): break
 		DP.close
 		DIALOG.ok(ADDON_NAME, 'Found ' + str(i) + ' Channels')
+
+
+# New helper: multi-stage endpoint verifier
+try:
+	import requests
+	exist_requests = True
+except Exception:
+	exist_requests = False
+	# Fallback to urllib if requests is not available
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
+
+
+def get_working_endpoint(base_url, user, password, timeout=10, retries=2, treat_512_as_invalid=True, notify=True):
+	"""Attempt a sequence of endpoints and return the first working endpoint.
+
+	Returns dict: {'url': url, 'type': 'json'|'m3u', 'status': code, 'data': content} or None if none.
+
+	Logic:
+	- try phase 1 endpoints (player_api, panel_api, api.php)
+	- try playlist fallback (get.php)
+	- try legacy (client_area/player_api.php)
+	- treat HTTP codes 401/403/512 as invalid credentials when treat_512_as_invalid True
+	- use requests when available; else urllib
+	"""
+	endpoints = [
+		f"{base_url}/player_api.php?username={user}&password={password}",
+		f"{base_url}/panel_api.php?username={user}&password={password}",
+		f"{base_url}/api.php?username={user}&password={password}",
+		f"{base_url}/get.php?username={user}&password={password}&type=m3u_plus&output=ts",
+		f"{base_url}/client_area/player_api.php?username={user}&password={password}",
+	]
+	headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+
+	for attempt in range(1, retries+1):
+		for url in endpoints:
+			xbmc.log(f'{ADDON_ID}: get_working_endpoint attempt {attempt} -> {url}', 1)
+			try:
+				if exist_requests:
+					resp = requests.get(url, headers=headers, timeout=timeout)
+					code = resp.status_code
+					content = resp.text
+				else:
+					req = Request(url)
+					req.add_header('User-Agent', headers['User-Agent'])
+					resp = urlopen(req, timeout=timeout)
+					code = resp.getcode()
+					content = resp.read().decode('utf-8')
+			except HTTPError as he:
+				code = getattr(he, 'code', None)
+				content = ''
+				# Store last error like OPEN_URL
+				OPEN_URL._last_error = he
+				xbmc.log(f'{ADDON_ID}: HTTPError {code} for {url}', 1)
+			except URLError as ue:
+				OPEN_URL._last_error = ue
+				xbmc.log(f'{ADDON_ID}: URLError for {url}: {ue}', 1)
+				continue
+			except Exception as e:
+				OPEN_URL._last_error = e
+				xbmc.log(f'{ADDON_ID}: Exception for {url}: {e}', 1)
+				continue
+
+			# handle status codes
+			if code == 200:
+				# check content type
+				if content and ('#EXTM3U' in content):
+					if notify:
+						xbmc.log(f'{ADDON_ID}: Found M3U at {url}', 1)
+					return {'url': url, 'type': 'm3u', 'status': code, 'data': content}
+				# try json
+				try:
+					j = json.loads(content)
+					if isinstance(j, dict) and 'user_info' in j:
+						if notify:
+							xbmc.log(f'{ADDON_ID}: Found valid JSON at {url}', 1)
+						return {'url': url, 'type': 'json', 'status': code, 'data': j}
+				except Exception:
+					# not JSON, continue to next endpoint
+					pass
+
+			# non-200 codes
+			if code in (401, 403) or (treat_512_as_invalid and code == 512):
+				xbmc.log(f'{ADDON_ID}: Invalid credentials detected (HTTP {code}) at {url}', 1)
+				if notify:
+					xbmcgui.Dialog().ok(ADDON_NAME, 'Test Failed\nInvalid DNS or Login Credentials')
+				return {'url': url, 'type': None, 'status': code, 'data': None, 'error': 'invalid_credentials'}
+			# 512 when not treated as invalid: log and continue
+			if code == 512:
+				xbmc.log(f'{ADDON_ID}: Potential Account/MAC Issue (HTTP 512) at {url}', 1)
+				continue
+			# other HTTP errors
+			if code >= 400:
+				xbmc.log(f'{ADDON_ID}: HTTP Error {code} at {url}', 1)
+				if notify:
+					xbmcgui.Dialog().ok(ADDON_NAME, f'HTTP Error {code} when testing credentials')
+				return {'url': url, 'type': None, 'status': code, 'data': None, 'error': 'http_error'}
+
+	# all attempts failed
+	msg = 'All endpoint tests failed. Please check DNS, credentials and network connectivity.'
+	xbmc.log(f'{ADDON_ID}: {msg}', 1)
+	if notify:
+		xbmcgui.Dialog().ok(ADDON_NAME, msg)
+	return None
 
 def keypopup(heading):
 	kb =xbmc.Keyboard ('', 'heading', True)

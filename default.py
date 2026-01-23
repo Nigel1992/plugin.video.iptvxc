@@ -39,7 +39,24 @@
 #############################=IMPORTS=######################################
 	#Kodi Specific
 import xbmc,xbmcaddon,xbmcgui,xbmcplugin,xbmcvfs
-	#Python Specific
+import sys
+# Select available log level constant to use for notice-level logging
+if hasattr(xbmc, 'LOGNOTICE'):
+	LOG_NOTICE = xbmc.LOGNOTICE
+elif hasattr(xbmc, 'LOGINFO'):
+	LOG_NOTICE = xbmc.LOGINFO
+elif hasattr(xbmc, 'LOGWARNING'):
+	LOG_NOTICE = xbmc.LOGWARNING
+elif hasattr(xbmc, 'LOGNONE'):
+	LOG_NOTICE = xbmc.LOGNONE
+else:
+	LOG_NOTICE = 0
+# Log that the module has been loaded (helps confirm installed copy)
+try:
+	xbmc.log(f'IPTVXC: default.py loaded (LOG_NOTICE={LOG_NOTICE})', LOG_NOTICE)
+except Exception:
+	pass
+#Python Specific
 import base64,os,re,unicodedata,time,string,sys,urllib.request
 import urllib.parse,urllib.error,json,datetime,zipfile,shutil
 import xml.etree.ElementTree as ET
@@ -102,38 +119,6 @@ adult_tags = ['xxx','xXx','XXX','adult','Adult','ADULT','adults','Adults','ADULT
 def buildcleanurl(url):
 	url = str(url).replace('USERNAME',username).replace('PASSWORD',password)
 	return url
-
-def start(signin):
-	if username == "":
-		dns = tools.keypopup('Enter DNS ex: http://dns.com:port')
-		usern = tools.keypopup('Enter Username')
-		passw = tools.keypopup('Enter Password')
-		control.setSetting('DNS',dns)
-		control.setSetting('Username',usern)
-		control.setSetting('Password',passw)
-		xbmc.executebuiltin('Container.Refresh')
-		auth_url = '{0}/player_api.php?username={1}&password={2}'.format(dns,usern,passw)
-		response = tools.OPEN_URL(auth_url)
-		parse = json.loads(response)
-		login_data = parse['user_info']['auth']
-		if login_data == 0:
-			line1 = "Incorrect Login Details"
-			line2 = "Please Re-enter" 
-			line3 = "" 
-			xbmcgui.Dialog().ok('Attention', line1+'\n'+line2+'\n'+line3)
-			start()
-		else:
-			line1 = "Login Sucsessfull"
-			line2 = "Welcome to "+ADDON_NAME
-			line3 = ('[B][COLOR white]%s[/COLOR][/B]'%usern)
-			xbmcgui.Dialog().ok(ADDON_NAME, line1+'\n' + line2 +'\n' + line3)
-			adult_set()
-			#tvguidesetup()
-			addonsettings('ADS2','')
-			xbmc.executebuiltin('Container.Refresh')
-			home()
-	else:
-		home()
 
 def home():
 	tools.addDir('Account Information','url',6,iconaccount,background,'')
@@ -364,7 +349,6 @@ def search():
 				if 'live' in stream_type:
 					tools.addDir(name, play_live+stream_id, 4, thumb, background, '')
 ######
-#no account to test
 ######
 
 def catchup():
@@ -554,8 +538,6 @@ def addonsettings(url,description):
 	elif url == "RefM3U":
 		DP.create(ADDON_NAME, "Please Wait")
 		tools.gen_m3u(panel_api, M3U_PATH)
-	elif url == "TEST":
-		tester()
 
 
 
@@ -646,7 +628,38 @@ def waitasec(time_to_wait,title,text):
 		return False
 
 def tester():
-	FTG = ''
+	try:
+		xbmc.log('[IPTVXC] tester() called', LOG_NOTICE)
+		addon = xbmcaddon.Addon()
+		dns = addon.getSetting(id='DNS')
+		user = addon.getSetting(id='Username')
+		pw = addon.getSetting(id='Password')
+		if not dns or not user or not pw:
+			DIALOG.ok(ADDON_NAME, 'Please enter DNS, Username and Password in Settings')
+			return
+		auth_url = '{0}/player_api.php?username={1}&password={2}'.format(dns, user, pw)
+		response = tools.OPEN_URL(auth_url)
+		if not response:
+			DIALOG.ok(ADDON_NAME, 'No response from server when testing credentials')
+			return
+		try:
+			parse = json.loads(response)
+		except Exception:
+			DIALOG.ok(ADDON_NAME, 'Invalid response from server')
+			return
+		login_data = None
+		try:
+			login_data = parse.get('user_info', {}).get('auth')
+		except:
+			login_data = None
+		if login_data in (None, 0, '0'):
+			DIALOG.ok(ADDON_NAME, 'Test Failed\nIncorrect Login Details')
+		else:
+			DIALOG.ok(ADDON_NAME, 'Test Successful\nCredentials appear valid')
+		return
+	except Exception as e:
+		DIALOG.ok(ADDON_NAME, 'Test Error\n%s' % str(e))
+		return
 
 def pvrsetup():
 	correctPVR()
@@ -727,7 +740,6 @@ def extras():
 	if os.path.exists(M3U_PATH):
 		tools.addDir('Refresh M3U','RefM3U',10,icon,background,'')
 	tools.addDir('Clear Cache','clearcache',10,icon,background,'')
-	#tools.addDir('Tester','TEST',10,icon,background,'')
 
 params=tools.get_params()
 url=None
@@ -754,7 +766,10 @@ except:
 try:
 	mode=int(params["mode"])
 except:
-	pass
+	try:
+		mode=urllib.parse.unquote_plus(params["mode"])
+	except:
+		mode=None
 try:
 	description=urllib.parse.unquote_plus(params["description"])
 except:
@@ -776,8 +791,8 @@ try:
 except:
 	tmdb_id=''
 
-if mode==None or url==None or len(url)<1:
-	start('false')
+if mode==None:
+	home()
 
 elif mode==1:
 	livecategory()
@@ -803,10 +818,51 @@ elif mode==7:
 elif mode==8:
 	settingsmenu()
 	
-elif mode==10:
-	addonsettings(url,description)
+elif mode==9:
+	import xbmcaddon
+	import xbmcgui
+	import xbmc
+	from resources.modules import tools
+	xbmc.log('IPTVXC: Test Credentials handler triggered', LOG_NOTICE)
+	addon = xbmcaddon.Addon()
+	username = addon.getSetting('Username')
+	password = addon.getSetting('Password')
+	base_url = addon.getSetting('DNS')
+	xbmc.log(f'IPTVXC: Settings - DNS={base_url}, Username={username}, Password={password}', LOG_NOTICE)
+	if not (username and password and base_url):
+		xbmc.log('IPTVXC: Missing credentials', LOG_NOTICE)
+		xbmcgui.Dialog().ok('Test Credentials', 'Please enter DNS, Username, and Password in settings.')
+	else:
+		# Use the robust multi-stage endpoint checker instead of one-shot OPEN_URL
+		try:
+			res = tools.get_working_endpoint(base_url, username, password, timeout=10, retries=2, treat_512_as_invalid=True, notify=False)
+		except Exception as e:
+			xbmc.log(f'IPTVXC: get_working_endpoint exception: {e}', LOG_NOTICE)
+			xbmcgui.Dialog().ok('Test Credentials', f'Error testing endpoints:\n{e}')
+			res = None
+
+		if not res:
+			xbmc.log('IPTVXC: No working endpoint found', LOG_NOTICE)
+			xbmcgui.Dialog().ok('Test Credentials', 'All endpoint tests failed. Please check DNS, credentials and network connectivity.')
+		else:
+			# Check for explicit invalid_credentials error
+			if res.get('error') == 'invalid_credentials':
+				xbmcgui.Dialog().ok('Test Credentials', 'Test Failed\nInvalid DNS or Login Credentials')
+			else:
+				# Successful endpoint - handle types
+				if res.get('type') == 'json':
+					data = res.get('data')
+					if isinstance(data, dict) and data.get('user_info', {}).get('auth', 0) == 1:
+						xbmcgui.Dialog().ok('Test Credentials', 'Test Successful\nCredentials appear valid')
+					else:
+						xbmcgui.Dialog().ok('Test Credentials', 'Test Failed\nLogin failed. Please check your credentials.')
+				elif res.get('type') == 'm3u':
+					xbmcgui.Dialog().ok('Test Credentials', 'Test Successful\nM3U playlist reachable (endpoint OK)')
+				else:
+					xbmcgui.Dialog().ok('Test Credentials', 'Test Failed\nUnknown response from endpoint')
 	
-elif mode==11:
+elif mode==10:
+	pass
 	pvrsetup()
 	
 elif mode==12:
@@ -844,10 +900,9 @@ elif mode==20:
 
 
 
-elif mode=='start':
-	start('false')
 
-elif mode=='test':
-	tester()
+elif mode=='start':
+	home()
+
 
 xbmcplugin.endOfDirectory(int(sys.argv[1]))

@@ -512,20 +512,37 @@ def notify_account_expiry(threshold_days=None, show_dialog=False):
     return False
 
 
-def start_expiry_background_check(interval_hours=24):
+def start_expiry_background_check(interval_hours=None):
     """Starts a background thread that periodically checks expiry while addon runs.
 
+    If `interval_hours` is None, the setting `expiry_notify_interval_hours` is used (default 24).
     Thread stores flag in its .running attribute to allow future stop (not currently exposed in UI).
     """
+    # determine effective interval (hours)
+    try:
+        if interval_hours is None:
+            interval_hours = int(GET_SET.getSetting('expiry_notify_interval_hours') or 24)
+        else:
+            interval_hours = int(interval_hours)
+    except Exception:
+        interval_hours = 24
+
+    if interval_hours < 1:
+        interval_hours = 1
+
+    xbmc.log(f'{ADDON_ID}: Starting expiry background check every {interval_hours} hour(s)', 1)
+
     def _worker():
         t = threading.current_thread()
+        # convert to seconds
+        total_seconds = max(1, int(interval_hours * 3600))
         while getattr(t, 'running', True):
             try:
                 notify_account_expiry()
             except Exception:
                 pass
             # sleep in 1-second increments to remain responsive to possible stop flag changes
-            for _ in range(max(1, int(interval_hours * 3600))):
+            for _ in range(total_seconds):
                 if not getattr(t, 'running', True):
                     break
                 xbmc.sleep(1000)

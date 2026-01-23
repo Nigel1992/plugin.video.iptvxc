@@ -17,6 +17,11 @@ Optimized for **Kodi v21 (Omega)** & **Python 3.13**
 [![Python](https://img.shields.io/badge/Python-3.13-yellow?style=flat-square)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
 
+---
+
+**Official Kodi Repository for this addon:**
+👉 [Nigel1992/kodi-repository](https://github.com/Nigel1992/kodi-repository)
+
 </div>
 
 ---
@@ -85,6 +90,9 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 
 1. **Download the latest release**  
    👉 https://github.com/Nigel1992/plugin.video.iptvxc/releases
+
+2. **Or install from the official Kodi repository**  
+  👉 [Nigel1992/kodi-repository](https://github.com/Nigel1992/kodi-repository)
 
 2. **Install in Kodi**
    - `Settings` → `Add-ons` → `Install from zip file`

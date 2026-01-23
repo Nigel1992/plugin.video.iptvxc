@@ -15,6 +15,13 @@ jobs:
       - name: Checkout plugin.video.iptvxc
         uses: actions/checkout@v4
 
+      - name: Ensure REPO_PAT secret is set
+        run: |
+          if [ -z "${{ secrets.REPO_PAT }}" ]; then
+            echo "::error::REPO_PAT secret is not set. Please create a Personal Access Token with repo scope and add it to this repository's Secrets as REPO_PAT."
+            exit 1
+          fi
+
       - name: Checkout Kodi Repository
         uses: actions/checkout@v4
         with:

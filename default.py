@@ -793,6 +793,21 @@ except:
 
 if mode==None:
 	home()
+	# Check account expiry on addon launch and optionally start background checks
+	try:
+		# Non-blocking notification (silently ignore errors)
+		try:
+			tools.notify_account_expiry()
+		except Exception:
+			pass
+		# Start background worker if enabled in settings
+		try:
+			if ADDON.getSetting('expiry_notify_background') == 'true':
+				tools.start_expiry_background_check()
+		except Exception:
+			pass
+	except Exception:
+		pass
 
 elif mode==1:
 	livecategory()

@@ -109,7 +109,7 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 
 ---
 
-## 📝 Release Notes — **v3.3.2**
+## 📝 Release Notes — **v3.3.0**
 
 ### Improvements & Fixes
 

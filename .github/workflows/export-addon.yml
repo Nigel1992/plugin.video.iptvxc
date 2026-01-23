@@ -75,9 +75,8 @@ jobs:
 
       - name: Copy addon files
         run: |
-          # include dotfiles and hidden files
-          shopt -s dotglob || true
-          cp -r ./* kodi-repo/repository.nigel1992/addons/plugin.video.iptvxc/
+          # copy addon files into the kodi-repo addon folder, excluding the kodi-repo working copy itself
+          rsync -a --exclude='kodi-repo' --exclude='.git' ./ kodi-repo/repository.nigel1992/addons/plugin.video.iptvxc/
 
       - name: Update Repository README
         run: |

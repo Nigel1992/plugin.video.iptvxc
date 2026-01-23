@@ -40,7 +40,8 @@ jobs:
           python3 << 'PY'
           import os
           from xml.etree import ElementTree as ET
-          tree = ET.parse('plugin.video.iptvxc/addon.xml')
+          # we run inside the checked-out addon repo directory, parse addon.xml directly
+          tree = ET.parse('addon.xml')
           root = tree.getroot()
           version = root.get('version')
           description = root.find('.//description').text.strip() if root.find('.//description') is not None else ''
@@ -74,7 +75,9 @@ jobs:
 
       - name: Copy addon files
         run: |
-          cp -r plugin.video.iptvxc/* kodi-repo/repository.nigel1992/addons/plugin.video.iptvxc/
+          # include dotfiles and hidden files
+          shopt -s dotglob || true
+          cp -r ./* kodi-repo/repository.nigel1992/addons/plugin.video.iptvxc/
 
       - name: Update Repository README
         run: |

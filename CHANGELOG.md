@@ -1,4 +1,9 @@
 # Changelog
+#
+## 3.3.3.1 (2026-01-25)
+- Updated all main icons and add-on icon with user-supplied images
+- Repackaged add-on ZIP with new assets
+- Version bump and release automation improvements
 
 ## 3.3.3 (2026-01-24)
 - Added account expiry checks and notifications

@@ -47,6 +47,10 @@ from urllib.request import Request, urlopen
 from resources.modules import control
 
 ##########################=VARIABLES=#######################################
+
+# Logo import utilities removed — feature reverted
+
+
 ADDON = xbmcaddon.Addon()
 ADDON_ID = ADDON.getAddonInfo('id')
 GET_SET = xbmcaddon.Addon(ADDON_ID)

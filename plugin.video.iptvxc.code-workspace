@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "plugin.video.iptvxc",
+			"path": "."
+		},
+		{
+			"name": "IPTV Icons",
+			"path": "../IPTV Icons"
+		}
+	],
+	"settings": {}
+}

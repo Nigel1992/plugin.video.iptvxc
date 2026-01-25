@@ -324,30 +324,98 @@ def search():
 	text = searchdialog()
 	if not text:
 		return
-	raw = tools.OPEN_URL(panel_api)
-	if not raw:
-		return
-	try:
-		parse = json.loads(raw)
-	except Exception:
-		return
-	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
 	q = (text or '').lower()
-	channels = parse.get('available_channels', {})
-	for key in channels:
-		a = channels[key]
-		name = a.get('name','')
-		lower = name.lower()
-		if q in lower or (q not in lower and q in name):
-			stream_id = str(a.get('stream_id',''))
-			thumb = (a.get('stream_icon','') or '').replace(r'\/', '/')
-			stream_type = (a.get('stream_type','') or '').replace(r'\/', '/')
-			container_extension = a.get('container_extension','mp4')
-			if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
-				if 'movie' in stream_type:
-					tools.addDir(name, play_movies+stream_id+'.'+container_extension, 4, thumb, background, '')
-				if 'live' in stream_type:
-					tools.addDir(name, play_live+stream_id, 4, thumb, background, '')
+	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
+	results = []
+	# Search Live TV (available_channels)
+	raw = tools.OPEN_URL(panel_api)
+	if raw:
+		try:
+			parse = json.loads(raw)
+		except Exception:
+			parse = {}
+		channels = parse.get('available_channels', {})
+		for key in channels:
+			a = channels[key]
+			name = a.get('name','')
+			lower = name.lower()
+			if q in lower or (q not in lower and q in name):
+				stream_id = str(a.get('stream_id',''))
+				thumb = (a.get('stream_icon','') or '').replace(r'\/', '/')
+				stream_type = (a.get('stream_type','') or '').replace(r'\/', '/')
+				container_extension = a.get('container_extension','mp4')
+				if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
+					if 'movie' in stream_type:
+						results.append(('movie', name, play_movies+stream_id+'.'+container_extension, 4, thumb, background, ''))
+					if 'live' in stream_type:
+						results.append(('live', name, play_live+stream_id, 4, thumb, background, ''))
+	# Search VOD (Movies)
+	vod_data = tools.OPEN_URL(vod_url)
+	if vod_data:
+		try:
+			root = ET.fromstring(vod_data)
+			for ch in root.findall('.//channel'):
+				t = ch.findtext('title', default='')
+				name = str(tools.b64(t)).replace('?', '') if t else ''
+				if q in name.lower() or (q not in name.lower() and q in name):
+					playlist = ch.findtext('playlist_url')
+					thumb = ch.findtext('desc_image', default='')
+					if thumb:
+						thumb = thumb.replace('<![CDATA[','').replace(']]>','')
+					stream = ch.findtext('stream_url', default='')
+					url1 = tools.check_protocol((playlist or stream).replace('<![CDATA[','').replace(']]>',''))
+					desc_raw = ch.findtext('description', default='')
+					desc = tools.b64(desc_raw) if desc_raw else ''
+					if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
+						results.append(('vod', name, url1, 4, thumb or background, background, desc))
+		except Exception:
+			pass
+	# Search Series
+	series_data = tools.OPEN_URL(player_api+'&action=get_series')
+	if series_data:
+		try:
+			ser_cat = json.loads(series_data)
+			for ser in ser_cat:
+				name = ser.get('name','')
+				if q in name.lower() or (q not in name.lower() and q in name):
+					series_id = str(ser.get('series_id',''))
+					cover = ser.get('cover','')
+					results.append(('series', name, player_api+'&action=get_series_info&series_id='+series_id, 19, cover, background, ''))
+		except Exception:
+			pass
+	# Search Catch-up (if available)
+	catchup_raw = tools.OPEN_URL(panel_api)
+	if catchup_raw:
+		try:
+			parse = json.loads(catchup_raw)
+			channels = parse.get('available_channels', {})
+			for key in channels:
+				a = channels[key]
+				if int(a.get('tv_archive', 0)) == 1:
+					name = (a.get('epg_channel_id','') or '').replace(r'\/', '/')
+					if q in name.lower() or (q not in name.lower() and q in name):
+						thumb = (a.get('stream_icon','') or '').replace(r'\/', '/')
+						sid = str(a.get('stream_id',''))
+						results.append(('catchup', name, 'url', 13, thumb, background, sid))
+		except Exception:
+			pass
+	# Display all results
+	section_labels = {
+		'live': '[B][COLOR lime]LIVE[/COLOR][/B] ',
+		'movie': '[B][COLOR orange]MOVIE[/COLOR][/B] ',
+		'vod': '[B][COLOR yellow]VOD[/COLOR][/B] ',
+		'series': '[B][COLOR aqua]SERIES[/COLOR][/B] ',
+		'catchup': '[B][COLOR orange]CATCH-UP[/COLOR][/B] '
+	}
+	for r in results:
+		# r = (type, name, url, mode, thumb, background, desc/sid)
+		label = section_labels.get(r[0], '') + r[1]
+		# Playable items: mode==4, isFolder=False
+		if r[0] in ('movie', 'live', 'vod'):
+			tools.addDir(label, r[2], 4, r[4], r[5], r[6])
+		# Non-playable: keep original mode (series/catchup)
+		else:
+			tools.addDir(label, r[2], r[3], r[4], r[5], r[6])
 ######
 ######
 
@@ -895,8 +963,11 @@ elif mode==15:
 elif mode==16:
 	extras()
 	
+
 elif mode==18:
 	series_cats(url)
+
+
 
 elif mode==25:
 	serieslist(url)

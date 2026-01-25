@@ -1,5 +1,11 @@
 # Changelog
 #
+## 3.4.0 (2026-01-25)
+- Search improvements: now searches Live TV, VOD, Series and Catch-up concurrently and aggregates all matches (much faster on large M3U providers)
+- UI: Results are prefixed with section labels and colour-coded (Live TV, VOD, Series, Catch-up)
+- Navigation: after playback the addon now returns to the results list instead of reopening the search input
+- Misc: packaging + release automation updates
+
 ## 3.3.3.1 (2026-01-25)
 - Updated all main icons and add-on icon with user-supplied images
 - Repackaged add-on ZIP with new assets

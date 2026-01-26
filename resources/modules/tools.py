@@ -1,3 +1,11 @@
+def refresh_epg():
+	# This function should trigger a refresh of the EPG/Guide data
+	xbmc.log('IPTVXC: Refresh EPG/Guide Data triggered', 1)
+	xbmcgui.Dialog().ok('Refresh EPG/Guide', 'Refreshing EPG/Guide data...')
+	# Attempt to refresh the PVR/EPG data in Kodi
+	xbmc.executebuiltin('RunPlugin(plugin://pvr.iptvsimple/?action=resetepg)')
+	xbmc.executebuiltin('Container.Refresh')
+	xbmcgui.Dialog().ok('Refresh EPG/Guide', 'EPG/Guide data refresh triggered. If you do not see changes, restart Kodi or the PVR add-on.')
 #!/usr/bin/python                                                          #
 # -*- coding: utf-8 -*-                                                    #
 ############################################################################

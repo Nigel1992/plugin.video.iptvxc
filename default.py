@@ -573,7 +573,9 @@ def addonsettings(url,description):
 	elif url =="Itv":
 			xbmc.executebuiltin('InstallAddon(pvr.iptvsimple)')
 	elif url =="ST":
+		# Only run the speed test, do not prompt for M3U or provider
 		speedtest.speedtest()
+		return
 	elif url =="META":
 		if 'ON' in description:
 			xbmcaddon.Addon().setSetting('meta','false')
@@ -799,14 +801,10 @@ def num2day(num):
 	return day
 	
 def extras():
-	tools.addDir('Run a Speed Test','ST',10,icon,background,'')
-	if xbmc.getCondVisibility('System.HasAddon(pvr.iptvsimple)'):
-		tools.addDir('Setup PVR Guide','tv',10,icon,background,'')
-	if not xbmc.getCondVisibility('System.HasAddon(pvr.iptvsimple)'):
-		tools.addDir('Install PVR Guide','Itv',10,icon,background,'')
-		xbmc.executebuiltin('Container.Refresh')
-	if os.path.exists(M3U_PATH):
-		tools.addDir('Refresh M3U','RefM3U',10,icon,background,'')
+	tools.addDir('Run a Speed Test','ST',99,icon,background,'')
+	tools.addDir('Setup PVR Guide','tv',10,icon,background,'')
+	tools.addDir('Install PVR Guide','Itv',10,icon,background,'')
+	tools.addDir('Refresh M3U','RefM3U',10,icon,background,'')
 	tools.addDir('Clear Cache','clearcache',10,icon,background,'')
 
 params=tools.get_params()
@@ -960,6 +958,31 @@ elif mode==14:
 elif mode==15:
 	pass
 	
+
+elif mode==99:
+	speedtest.speedtest()
+
+# Setup PVR Guide
+elif mode==10 and url == 'tv':
+	pvrsetup()
+
+# Install PVR Guide
+elif mode==10 and url == 'Itv':
+	xbmc.executebuiltin('InstallAddon(pvr.iptvsimple)')
+	xbmc.executebuiltin('Container.Refresh')
+
+# Refresh M3U
+elif mode==10 and url == 'RefM3U':
+	from resources.modules import tools
+	DP.create(ADDON_NAME, "Please Wait")
+	tools.gen_m3u(panel_api, M3U_PATH)
+	xbmcgui.Dialog().ok(ADDON_NAME, 'M3U refreshed!')
+	xbmc.executebuiltin('Container.Refresh')
+
+# Clear Cache
+elif mode==10 and url == 'clearcache':
+	from resources.modules import tools
+	tools.clear_cache()
 elif mode==16:
 	extras()
 	

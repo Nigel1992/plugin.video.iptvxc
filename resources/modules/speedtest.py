@@ -54,6 +54,9 @@
 
 try:
 	from kodi_six import xbmc, xbmcaddon, xbmcgui,xbmcvfs
+# Portions of this code are based on script.speedtester by the original creator:
+# https://github.com/add-ons/script.speedtester
+# Credit: script.speedtester authors and contributors
 except ImportError:
 	import xbmc ,xbmcgui, xbmcaddon,xbmcvfs
 
@@ -284,13 +287,14 @@ def closestServers(client, all=False):
 			uh.close()
 			try:
 				try:
-					root = ET.fromstring(''.encode().join(serversxml))
-					elements = root.getiterator('server')
+					# Python 3: decode bytes to string before parsing
+					xml_data = b''.join(serversxml).decode('utf-8')
+					root = ET.fromstring(xml_data)
+					elements = root.iter('server')
 				except Exception:
-
-								# Python3 branch
-
-					root = DOM.parseString(''.join(serversxml))
+					# Fallback for DOM parsing if needed
+					xml_data = b''.join(serversxml).decode('utf-8')
+					root = DOM.parseString(xml_data)
 					elements = root.getElementsByTagName('server')
 			except SyntaxError:
 				raise SpeedtestCliServerListError
@@ -655,6 +659,13 @@ class FTG_Speed_Test(animation):
 
 	def onClick(self, control):
 		if control == self.button_run_ID:
+			# Show credits dialog before running the speed test
+			xbmcgui.Dialog().ok(
+				'Speed Test Credits',
+				'Portions of this code are based on script.speedtester by the original creator:\n'
+				'https://github.com/add-ons/script.speedtester\n'
+				'Credit: script.speedtester authors and contributors'
+			)
 			self.testRun = True
 			self.displayButtonRun(False)
 			self.displayResults()
@@ -741,7 +752,7 @@ class FTG_Speed_Test(animation):
 			speed_dl = 0
 			while len(finished) < total_files:
 				thread = q.get(True)
-				while thread.isAlive():
+				while thread.is_alive():
 					thread.join(timeout=0.1)
 				finished.append(sum(thread.result))
 				speedF = ((sum(finished) / (timeit.default_timer() - start)) / 1000 / 1000) * 8
@@ -756,9 +767,9 @@ class FTG_Speed_Test(animation):
 		start = timeit.default_timer()
 		prod_thread.start()
 		cons_thread.start()
-		while prod_thread.isAlive():
+		while prod_thread.is_alive():
 			prod_thread.join(timeout=0.1)
-		while cons_thread.isAlive():
+		while cons_thread.is_alive():
 			cons_thread.join(timeout=0.1)
 		return sum(finished) / (timeit.default_timer() - start)
 
@@ -778,7 +789,7 @@ class FTG_Speed_Test(animation):
 			speed_dl = 0
 			while len(finished) < total_sizes:
 				thread = q.get(True)
-				while thread.isAlive():
+				while thread.is_alive():
 					thread.join(timeout=0.1)
 				finished.append(thread.result)
 				speedF = ((sum(finished) / (timeit.default_timer() - start)) / 1000 / 1000) * 8
@@ -793,9 +804,9 @@ class FTG_Speed_Test(animation):
 		start = timeit.default_timer()
 		prod_thread.start()
 		cons_thread.start()
-		while prod_thread.isAlive():
+		while prod_thread.is_alive():
 			prod_thread.join(timeout=0.1)
-		while cons_thread.isAlive():
+		while cons_thread.is_alive():
 			cons_thread.join(timeout=0.1)
 		return sum(finished) / (timeit.default_timer() - start)
 
@@ -946,5 +957,9 @@ class FTG_Speed_Test(animation):
 			image_result = 'https://www.speedtest.net/result/%s.png' % resultid[0]
 
 def speedtest():
-	FireTVGuru = FTG_Speed_Test("script-speedtester_main.xml", ADDON.getAddonInfo('path'), "Default")
-	del FireTVGuru
+# ---
+# Speed Test function using script.speedtester logic and UI
+# Credit: Matt Huisman (https://github.com/matthuisman)
+# ---
+	# Launch the custom Kodi window for the speed test UI
+	FTG_Speed_Test("script-speedtester_main.xml", ADDON.getAddonInfo('path'), "Default")

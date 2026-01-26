@@ -12,7 +12,7 @@ Live TV • VOD • Catch-up • TV Series
 Optimized for **Kodi v21 (Omega)** & **Python 3.13**
 
 [![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
-[![Version](https://img.shields.io/badge/Version-3.4.0-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.4.0)
+[![Version](https://img.shields.io/badge/Version-3.5.0-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.5.0)
 [![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=flat-square)](https://kodi.tv)
 [![Python](https://img.shields.io/badge/Python-3.13-yellow?style=flat-square)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
@@ -117,6 +117,13 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 
 ---
 
+## Version 3.5.0 (2026-01-27)
+- Fixed and updated the Speed Test feature:
+  - Replaced with script.speedtester logic and UI for reliability and modern look
+  - Full Python 3 compatibility (threading, XML parsing, bytes/str handling)
+  - Added author credit for original script.speedtester
+  - Ensured no M3U/provider popups and direct launch from Extras menu
+- Fixed M3U popup to no longer appear unexpectedly
 
 ---
 

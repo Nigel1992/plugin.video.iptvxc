@@ -1,5 +1,13 @@
 # Changelog
 #
+## 3.5.0 (2026-01-27)
+- Fixed and updated the Speed Test feature:
+  - Replaced with script.speedtester logic and UI for reliability and modern look
+  - Full Python 3 compatibility (threading, XML parsing, bytes/str handling)
+  - Added author credit for original script.speedtester
+  - Ensured no M3U/provider popups and direct launch from Extras menu
+- Fixed M3U popup to no longer appear unexpectedly
+
 ## 3.4.0 (2026-01-25)
 - Improved search experience:
   - Search now queries Live TV, VOD (Movies), Series and Catch-up content instead of only Live channels

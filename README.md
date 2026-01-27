@@ -12,7 +12,7 @@ Live TV • VOD • Catch-up • TV Series
 Optimized for **Kodi v21 (Omega)** & **Python 3.13**
 
 [![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
-[![Version](https://img.shields.io/badge/Version-3.5.1-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.5.1)
+[![Version](https://img.shields.io/badge/Version-3.5.2-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.5.2)
 [![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=flat-square)](https://kodi.tv)
 [![Python](https://img.shields.io/badge/Python-3.13-yellow?style=flat-square)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
@@ -116,6 +116,12 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
   *Series* → *Season* → *Episode*
 
 ---
+
+
+## Version 3.5.2 (2026-01-28)
+- Playback now automatically retries up to 5 times if the connection drops during playback or seeking (improves reliability for unstable streams)
+- Version updated in addon.xml and release zip
+- All previous features and fixes retained
 
 ## Version 3.5.1 (2026-01-27)
 - Extras menu placeholders (Setup PVR Guide, Install PVR Guide, Refresh M3U, Clear Cache) are now visible but disabled in the UI. Only Speed Test is active. Disabled options will show a message if selected.

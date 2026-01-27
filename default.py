@@ -40,6 +40,46 @@
 	#Kodi Specific
 import xbmc,xbmcaddon,xbmcgui,xbmcplugin,xbmcvfs
 import sys
+# Custom Player class for reconnect logic
+class ReconnectPlayer(xbmc.Player):
+	def __init__(self, url, max_retries=5, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.url = url
+		self.max_retries = max_retries
+		self.retry_count = 0
+		self._stopped = False
+
+	def play_with_retries(self):
+		self.retry_count = 0
+		self._stopped = False
+		while self.retry_count < self.max_retries:
+			self.play(self.url)
+			# Wait for playback to start or fail
+			for _ in range(20):  # Wait up to 2 seconds
+				xbmc.sleep(100)
+				if self.isPlaying():
+					return True
+				if self._stopped:
+					break
+			self.retry_count += 1
+		return False
+
+	def onPlayBackStopped(self):
+		self._stopped = True
+		if self.retry_count < self.max_retries:
+			xbmc.log(f'IPTVXC: Playback stopped, retrying ({self.retry_count+1}/{self.max_retries})', LOG_NOTICE)
+			self.retry_count += 1
+			self.play(self.url)
+
+	def onPlayBackEnded(self):
+		self._stopped = True
+
+	def onPlayBackError(self):
+		self._stopped = True
+		if self.retry_count < self.max_retries:
+			xbmc.log(f'IPTVXC: Playback error, retrying ({self.retry_count+1}/{self.max_retries})', LOG_NOTICE)
+			self.retry_count += 1
+			self.play(self.url)
 # Select available log level constant to use for notice-level logging
 if hasattr(xbmc, 'LOGNOTICE'):
 	LOG_NOTICE = xbmc.LOGNOTICE
@@ -485,13 +525,18 @@ def tvguide():
 
 def stream_video(url):
 	url = buildcleanurl(url)
+	max_retries = 5
 	liz = xbmcgui.ListItem('')
 	liz.setArt({'icon':icon, 'thumb':icon})
 	liz.setInfo(type='Video', infoLabels={'Title': '', 'Plot': ''})
 	liz.setProperty('IsPlayable','true')
 	liz.setPath(str(url))
 	xbmcplugin.setResolvedUrl(int(sys.argv[1]), True, liz)
-	
+	# Use custom player for reconnect logic
+	player = ReconnectPlayer(url, max_retries)
+	success = player.play_with_retries()
+	if not success:
+		xbmcgui.Dialog().notification('Playback Error', 'Failed to start or resume stream after 5 attempts.', icon, 5000)
 	# Trakt scrobbling removed
 
 def searchdialog():

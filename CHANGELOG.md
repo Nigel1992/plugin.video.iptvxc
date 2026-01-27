@@ -1,3 +1,7 @@
+# Version 3.5.2 (2026-01-28)
+- Playback now automatically retries up to 5 times if the connection drops during playback or seeking (improves reliability for unstable streams)
+- Version updated in addon.xml and release zip
+- All previous features and fixes retained
 # Changelog
 #
 ## 3.5.1 (2026-01-27)

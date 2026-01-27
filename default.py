@@ -802,10 +802,6 @@ def num2day(num):
 	
 def extras():
 	tools.addDir('Run a Speed Test','ST',99,icon,background,'')
-	tools.addDir('Setup PVR Guide','tv',10,icon,background,'')
-	tools.addDir('Install PVR Guide','Itv',10,icon,background,'')
-	tools.addDir('Refresh M3U','RefM3U',10,icon,background,'')
-	tools.addDir('Clear Cache','clearcache',10,icon,background,'')
 
 params=tools.get_params()
 url=None
@@ -943,8 +939,12 @@ elif mode==9:
 					xbmcgui.Dialog().ok('Test Credentials', 'Test Failed\nUnknown response from endpoint')
 	
 elif mode==10:
-	pass
-	pvrsetup()
+	if url == 'ST':
+		speedtest.speedtest()
+	elif url == 'placeholder':
+		xbmcgui.Dialog().ok(ADDON_NAME, 'This feature is coming soon!')
+	else:
+		pass
 	
 elif mode==12:
 	catchup()

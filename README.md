@@ -117,13 +117,8 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 
 ---
 
-## Version 3.5.0 (2026-01-27)
-- Fixed and updated the Speed Test feature:
-  - Replaced with script.speedtester logic and UI for reliability and modern look
-  - Full Python 3 compatibility (threading, XML parsing, bytes/str handling)
-  - Added author credit for original script.speedtester
-  - Ensured no M3U/provider popups and direct launch from Extras menu
-- Fixed M3U popup to no longer appear unexpectedly
+## Version 3.5.1 (2026-01-27)
+- Hotfix: Only Speed Test is available in the Extras menu. The other four options (Setup PVR Guide, Install PVR Guide, Refresh M3U, Clear Cache) have been removed as they are currently broken and will be fixed in a future update.
 
 ---
 

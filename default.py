@@ -802,6 +802,10 @@ def num2day(num):
 	
 def extras():
 	tools.addDir('Run a Speed Test','ST',99,icon,background,'')
+	tools.addDir('[COLOR grey][I]Setup PVR Guide (disabled)[/I][/COLOR]','placeholder',-1,icon,background,'')
+	tools.addDir('[COLOR grey][I]Install PVR Guide (disabled)[/I][/COLOR]','placeholder',-1,icon,background,'')
+	tools.addDir('[COLOR grey][I]Refresh M3U (disabled)[/I][/COLOR]','placeholder',-1,icon,background,'')
+	tools.addDir('[COLOR grey][I]Clear Cache (disabled)[/I][/COLOR]','placeholder',-1,icon,background,'')
 
 params=tools.get_params()
 url=None
@@ -942,7 +946,7 @@ elif mode==10:
 	if url == 'ST':
 		speedtest.speedtest()
 	elif url == 'placeholder':
-		xbmcgui.Dialog().ok(ADDON_NAME, 'This feature is coming soon!')
+		xbmcgui.Dialog().ok(ADDON_NAME, 'This feature is currently disabled.')
 	else:
 		pass
 	

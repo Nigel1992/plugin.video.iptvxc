@@ -118,7 +118,7 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 ---
 
 ## Version 3.5.1 (2026-01-27)
-- Hotfix: Only Speed Test is available in the Extras menu. The other four options (Setup PVR Guide, Install PVR Guide, Refresh M3U, Clear Cache) have been removed as they are currently broken and will be fixed in a future update.
+- Extras menu placeholders (Setup PVR Guide, Install PVR Guide, Refresh M3U, Clear Cache) are now visible but disabled in the UI. Only Speed Test is active. Disabled options will show a message if selected.
 
 ---
 

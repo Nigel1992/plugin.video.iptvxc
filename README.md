@@ -12,7 +12,7 @@ Live TV • VOD • Catch-up • TV Series
 Optimized for **Kodi v21 (Omega)** & **Python 3.13**
 
 [![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
-[![Version](https://img.shields.io/badge/Version-3.5.2-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.5.2)
+[![Version](https://img.shields.io/badge/Version-3.6.0-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.6.0)
 [![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=flat-square)](https://kodi.tv)
 [![Python](https://img.shields.io/badge/Python-3.13-yellow?style=flat-square)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
@@ -45,11 +45,13 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 
 ## ✨ Features
 
-- Fast Live/VOD navigation with lightweight caching
+- Fast Live/VOD navigation with persistent file-based caching
+- Configurable cache expiry per content type (Live TV, Movies, Series) in Settings → Cache
 - TV Series with seasons/episodes restored
 - Catch-up TV (provider-dependent)
 - Speed test and advanced settings helpers
 - Robust handling of inconsistent provider APIs
+- Icon-host reachability checks — dead icon servers never stall the UI
 
 ---
 
@@ -118,14 +120,18 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 ---
 
 
+## Version 3.6.0 (2026-03-03)
+- Fixed freeze/slowdown when pressing X to stop a stream
+- Fixed intermittent loading overlay (busy dialog) getting stuck on stream start/stop
+- Fixed Kodi becoming unresponsive on Stop
+- Fixed UI freeze caused by unreachable channel icon servers (30s curl stall)
+- Added persistent file-based caching for Live TV, Movies/VOD, Series, Catch-up
+- Added user-configurable cache expiry in Settings → Cache (5 minutes → 7 days)
+- Added Clear content cache button in Settings → Cache
+- Persistent icon-host reachability cache (survives between plugin invocations)
+
 ## Version 3.5.2 (2026-01-28)
 - Playback now automatically retries up to 5 times if the connection drops during playback or seeking (improves reliability for unstable streams)
-- Version updated in addon.xml and release zip
-- All previous features and fixes retained
-
-## Version 3.5.1 (2026-01-27)
-- Extras menu placeholders (Setup PVR Guide, Install PVR Guide, Refresh M3U, Clear Cache) are now visible but disabled in the UI. Only Speed Test is active. Disabled options will show a message if selected.
-- Fixed: The version number in addon.xml now matches the release version.
 
 ---
 

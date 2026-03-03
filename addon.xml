@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.iptvxc" name="[B][COLOR red]XCUI Streams[/B][/COLOR]" version="3.5.2" provider-name="Nigel1992">
-  <extension point="xbmc.python.pluginsource"
-			library="default.py">
-		<provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-	<summary lang="en">[COLOR red]An IPTV addon written to work with XC and XCUI for Kodi 21. Trakt integration is coming in a future release.[/COLOR]</summary>
-	<language>en</language>
-	<description lang="en">[COLOR red]This addon does not supply nor provide any illegal content. Trakt integration is coming in a future release.[/COLOR]</description>
-	<platform>all</platform>
-	<assets>
-		<icon>icon.png</icon>
-		<fanart>fanart.jpg</fanart>
-	</assets>
-  </extension>
+<addon id="plugin.video.iptvxc" name="[B][COLOR red]XCUI Streams[/COLOR][/B]" version="3.6.0" provider-name="Nigel1992">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">[COLOR red]An IPTV addon for Kodi 21.[/COLOR]</summary>
+        <description lang="en">[COLOR red]This addon does not supply illegal content.[/COLOR]</description>
+        <language>en</language>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
 </addon>

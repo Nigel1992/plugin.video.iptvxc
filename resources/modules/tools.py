@@ -48,7 +48,7 @@ def refresh_epg():
 	#Kodi Specific
 import xbmcplugin,xbmcgui, xbmcaddon,xbmcvfs
 	#Python Specific
-import os,re,sys,xbmc,json,base64,string,urllib.request,urllib.parse,urllib.error,urllib.parse,shutil,socket,time
+import os,re,sys,xbmc,json,base64,string,urllib.request,urllib.parse,urllib.error,urllib.parse,shutil,socket,time,hashlib
 from urllib.parse import urlparse
 	#Addon Specific
 from urllib.request import Request, urlopen
@@ -61,6 +61,10 @@ from resources.modules import control
 
 ADDON = xbmcaddon.Addon()
 ADDON_ID = ADDON.getAddonInfo('id')
+
+# --- File-based cache for API responses ---
+ADDON_DATA = xbmcvfs.translatePath(os.path.join('special://home/userdata/addon_data/', ADDON_ID))
+CACHE_DIR = os.path.join(ADDON_DATA, 'cache')
 GET_SET = xbmcaddon.Addon(ADDON_ID)
 ADDON_NAME = ADDON.getAddonInfo("name")
 ICON   = xbmcvfs.translatePath(os.path.join('special://home/addons/' + ADDON_ID,  'icon.png'))
@@ -69,6 +73,114 @@ DP  = xbmcgui.DialogProgress()
 COLOR1='white'
 COLOR2='blue'
 dns_text = GET_SET.getSetting(id='DNS')
+
+# ---------------------------------------------------------------------------
+#  Icon-host reachability cache
+# ---------------------------------------------------------------------------
+#  Kodi blocks its main thread (and VideoPlayer teardown) when it tries to
+#  fetch a remote thumbnail whose server is unreachable — each curl attempt
+#  can stall for up to 30 seconds.  We test each icon hostname ONCE with a
+#  fast TCP connect and remember the result for the user-configured TTL.
+#  If the host is down we substitute the local addon icon so Kodi never
+#  blocks.  The cache persists to disk across plugin invocations.
+# ---------------------------------------------------------------------------
+_HOST_PROBE_CACHE_FILE = os.path.join(CACHE_DIR, 'host_probe_cache.json')
+_HOST_TEST_TIMEOUT = 2              # seconds for the TCP connect probe
+_HOST_CACHE_TTL    = 3600          # re-test icon hosts after 1 hour (fixed)
+
+def _load_host_cache():
+	"""Load the persistent host-probe cache from disk."""
+	try:
+		if os.path.exists(_HOST_PROBE_CACHE_FILE):
+			with open(_HOST_PROBE_CACHE_FILE, 'r') as f:
+				raw = json.load(f)
+			# Convert JSON [bool, float] lists back to (bool, float) tuples
+			return {k: (bool(v[0]), float(v[1])) for k, v in raw.items()}
+	except Exception:
+		pass
+	return {}
+
+def _save_host_cache(cache):
+	"""Persist the host-probe cache to disk."""
+	try:
+		os.makedirs(CACHE_DIR, exist_ok=True)
+		with open(_HOST_PROBE_CACHE_FILE, 'w') as f:
+			json.dump(cache, f)
+	except Exception:
+		pass
+
+_host_reachable_cache = _load_host_cache()   # {hostname: (is_reachable, epoch)}
+
+# ---------------------------------------------------------------------------
+#  Content cache TTLs (minutes) — configured by the user in Settings > Cache
+# ---------------------------------------------------------------------------
+# settings.xml uses values= so getSetting() returns the literal label text
+_CONTENT_TTL_TEXT_MAP = {
+	'5 minutes': 5, '15 minutes': 15, '30 minutes': 30,
+	'1 hour': 60, '6 hours': 360, '12 hours': 720,
+	'1 day': 1440, '7 days': 10080,
+}
+def _get_content_ttl(setting_id, default_minutes):
+	try:
+		val = GET_SET.getSetting(setting_id) or ''
+		return _CONTENT_TTL_TEXT_MAP.get(val, default_minutes)
+	except Exception:
+		return default_minutes
+
+CONTENT_CACHE_TTL_TV     = _get_content_ttl('tv_cache_ttl',     30)
+CONTENT_CACHE_TTL_MOVIES = _get_content_ttl('movies_cache_ttl', 60)
+CONTENT_CACHE_TTL_SERIES = _get_content_ttl('series_cache_ttl', 60)
+
+# Hosts that are always reachable (large CDNs) — skip the test
+_TRUSTED_HOSTS = frozenset([
+	'image.tmdb.org', 'www.themoviedb.org', 'themoviedb.org',
+	'i.imgur.com', 'imgur.com',
+])
+
+def _test_host_reachable(hostname):
+	"""Return True if *hostname* accepts a TCP connection on port 80."""
+	now = time.time()
+	if hostname in _host_reachable_cache:
+		ok, ts = _host_reachable_cache[hostname]
+		if now - ts < _HOST_CACHE_TTL:
+			return ok
+	try:
+		sock = socket.create_connection((hostname, 80), timeout=_HOST_TEST_TIMEOUT)
+		sock.close()
+		_host_reachable_cache[hostname] = (True, now)
+		_save_host_cache(_host_reachable_cache)
+		return True
+	except (socket.timeout, socket.error, OSError):
+		xbmc.log('%s: icon host %s unreachable – using fallback icon' % (ADDON_ID, hostname), 2)
+		_host_reachable_cache[hostname] = (False, now)
+		_save_host_cache(_host_reachable_cache)
+		return False
+
+def safe_icon(iconimage, fallback=None):
+	"""Return *iconimage* if its host is reachable; otherwise *fallback*.
+
+	For local paths, data URIs, or empty strings the value is returned as-is.
+	The very first call for a given hostname does a fast TCP probe (2 s max).
+	"""
+	if fallback is None:
+		fallback = ICON
+	if not iconimage:
+		return fallback
+	url_str = str(iconimage)
+	if not url_str.startswith('http'):
+		return url_str                      # local path — keep it
+	try:
+		parsed = urlparse(url_str)
+		hostname = parsed.hostname
+		if not hostname:
+			return fallback
+		if hostname in _TRUSTED_HOSTS:
+			return url_str
+		if _test_host_reachable(hostname):
+			return url_str
+		return fallback
+	except Exception:
+		return fallback
 
 def check_protocol(url):
 	parsed = urlparse(dns_text)
@@ -116,10 +228,20 @@ def regex_get_us(text, start_with, end_with):
 	return r
 	
 def addDir(name,url,mode,iconimage,fanart,description):
-	u=sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(iconimage))+"&description="+urllib.parse.quote_plus(str(description))
+	# Use the local addon icon in the plugin URL parameter to prevent Kodi's
+	# internal CCurlFile from fetching a remote icon URL on stop/resume,
+	# which causes a 30-second UI freeze when the icon server is slow/down.
+	# The ListItem art below still uses the real (possibly remote) channel icon.
+	u=sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(ICON))+"&description="+urllib.parse.quote_plus(str(description))
+	try:
+		xbmc.log('%s: addDir name=%s mode=%s url=%s' % (ADDON_ID, str(name)[:80], str(mode), str(url)[:160]), 1)
+	except Exception:
+		pass
 	ok=True
+	# Use safe_icon to avoid Kodi blocking on unreachable icon servers
+	safe_img = safe_icon(iconimage)
 	liz=xbmcgui.ListItem(name)
-	liz.setArt({'icon':iconimage, 'thumb':iconimage})
+	liz.setArt({'icon':safe_img, 'thumb':safe_img})
 	liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description,})
 	liz.setProperty('fanart_image', fanart)
 	if mode==4:
@@ -146,10 +268,12 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 		else:
 			xbmc.log('[IPTVXC] No TMDB ID found in description (first 200 chars): %s' % description[:200], xbmc.LOGDEBUG)
 	
-	u=sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(iconimage))+"&description="+urllib.parse.quote_plus(str(description))+"&year="+urllib.parse.quote_plus(str(year))+"&tmdb_id="+urllib.parse.quote_plus(str(tmdb_id))
+	u=sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(ICON))+"&description="+urllib.parse.quote_plus(str(description))+"&year="+urllib.parse.quote_plus(str(year))+"&tmdb_id="+urllib.parse.quote_plus(str(tmdb_id))
 	ok=True
+	# Use safe_icon to avoid Kodi blocking on unreachable icon servers
+	safe_img = safe_icon(iconimage)
 	liz=xbmcgui.ListItem(name)
-	liz.setArt({'icon':iconimage, 'thumb':iconimage})
+	liz.setArt({'icon':safe_img, 'thumb':safe_img})
 	liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description,"Rating":rating,"Year":year,"Duration":runtime,"Cast":cast,"Genre":genre})
 	liz.setProperty('fanart_image', fanart)
 	liz.setProperty("IsPlayable","true")
@@ -212,10 +336,74 @@ def OPEN_URL(url):
 			pass
 		return ''
 
+def _ensure_cache_dir():
+	"""Create the addon file cache directory if it doesn't exist."""
+	if not os.path.exists(CACHE_DIR):
+		try:
+			os.makedirs(CACHE_DIR)
+		except Exception:
+			pass
+
+def _cache_key(url):
+	"""Return an MD5 hex digest of the URL for use as a cache filename."""
+	return hashlib.md5(url.encode('utf-8')).hexdigest()
+
+def OPEN_URL_CACHED(url, ttl_minutes=30):
+	"""Fetch URL with persistent file-based caching.
+
+	Returns cached content if the file exists and is younger than ttl_minutes.
+	Otherwise fetches from network, stores to cache, and returns the result.
+	"""
+	_ensure_cache_dir()
+	key = _cache_key(url)
+	cache_file = os.path.join(CACHE_DIR, key + '.dat')
+
+	# Check for a fresh cache hit
+	if os.path.exists(cache_file):
+		try:
+			age = time.time() - os.path.getmtime(cache_file)
+			if age < (ttl_minutes * 60):
+				with open(cache_file, 'r', encoding='utf-8') as f:
+					data = f.read()
+				if data:
+					xbmc.log('%s: Cache HIT for %s (age: %ds)' % (ADDON_ID, url[:80], int(age)), 1)
+					return data
+		except Exception:
+			pass
+
+	# Cache miss or expired — fetch from network
+	data = OPEN_URL(url)
+	if data:
+		try:
+			with open(cache_file, 'w', encoding='utf-8') as f:
+				f.write(data)
+			xbmc.log('%s: Cache STORE for %s' % (ADDON_ID, url[:80]), 1)
+		except Exception:
+			pass
+	return data
+
+def clear_addon_cache():
+	"""Delete all files in the addon's file cache directory."""
+	_ensure_cache_dir()
+	count = 0
+	try:
+		for f in os.listdir(CACHE_DIR):
+			fp = os.path.join(CACHE_DIR, f)
+			if os.path.isfile(fp):
+				os.remove(fp)
+				count += 1
+		xbmc.log('%s: Addon file cache cleared (%d files)' % (ADDON_ID, count), 1)
+	except Exception:
+		pass
+	return count
+
 def clear_cache():
 	xbmc.log('CLEAR CACHE ACTIVATED')
+	# Always clear addon file cache
+	clear_addon_cache()
+	# Also clear Kodi application cache
 	xbmc_cache_path = os.path.join(xbmc.translatePath('special://home'), 'cache')
-	confirm=xbmcgui.Dialog().yesno("Please Confirm","Please Confirm You Wish To Delete Your Kodi Application Cache")
+	confirm=xbmcgui.Dialog().yesno("Please Confirm","Clear addon data cache and Kodi application cache?")
 	if confirm:
 		if os.path.exists(xbmc_cache_path)==True:
 			for root, dirs, files in os.walk(xbmc_cache_path):
@@ -233,6 +421,9 @@ def clear_cache():
 							except:
 								pass
 		LogNotify("[COLOR {0}]{1}[/COLOR]".format(COLOR1, ADDON_NAME), '[COLOR {0}]Cache Cleared Successfully![/COLOR]'.format(COLOR2))
+		xbmc.executebuiltin("Container.Refresh()")
+	else:
+		LogNotify("[COLOR {0}]{1}[/COLOR]".format(COLOR1, ADDON_NAME), '[COLOR {0}]Addon cache cleared[/COLOR]'.format(COLOR2))
 		xbmc.executebuiltin("Container.Refresh()")
 
 def get_params():

@@ -1,3 +1,26 @@
+# Version 3.6.0 (2026-03-03)
+
+### 🐛 Bug Fixes
+- **Fixed freeze / slowdown when pressing X to stop a stream** — the plugin monitoring loop now exits immediately once playback stops instead of spinning for the full 30-second guard window
+- **Fixed intermittent loading overlay (spinning busy dialog) getting stuck** — busy dialog is now force-closed after stream resolve, and a background watchdog repeatedly closes it during teardown
+- **Fixed Kodi becoming unresponsive on Stop** — removed auto-retry logic that fought the stop state; playback teardown now completes cleanly
+- **Fixed slow stream start** — removed `ReconnectPlayer` double-play and sleep-loop blocking; playback now starts immediately via standard `setResolvedUrl`
+- **Fixed UI freeze caused by unreachable channel icon servers** — playback `ListItem` now always uses the local addon icon; icon hosts are TCP-probed before use and replaced with a fallback if unreachable
+- **Fixed 30-second curl stall on icon fetch** — added `curlclienttimeout` and `curllowtimeout` to `advancedsettings.xml` capping all thumbnail fetches at 3–5 seconds
+- **Fixed intermittent loading overlay race condition** — removed `sys.exit(0)` that caused Kodi to see "script aborted" and retry stream resolution in a loop
+
+### ✨ New Features
+- **Persistent file-based content caching** for Live TV (30 min), Movies/VOD (60 min), Series (60 min), and Catch-up (15 min) — repeat navigation is near-instant
+- **User-configurable cache expiry** — new **Settings → Cache** category lets users set separate expiry for Live TV, Movies, and Series (options: 5 minutes → 7 days)
+- **Clear content cache** button in Settings → Cache for instant cache reset
+- **Persistent icon-host reachability cache** — dead icon server results are saved to disk and survive between plugin invocations (re-tested every hour), eliminating repeated TCP probes on each list load
+- **`safe_icon()` applied throughout** — both `addDir()` and `addDirMeta()` now skip unreachable icon hosts in directory listings
+
+### 🔧 Improvements
+- `setContentLookup(False)` set on playback `ListItem` to prevent Kodi probing the stream on stop
+- Plugin script exits naturally after `setResolvedUrl` (clean exit instead of forced abort)
+- Proper title/description metadata passed to resolve `ListItem`
+
 # Version 3.5.2 (2026-01-28)
 - Playback now automatically retries up to 5 times if the connection drops during playback or seeking (improves reliability for unstable streams)
 - Version updated in addon.xml and release zip

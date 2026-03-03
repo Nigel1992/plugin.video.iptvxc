@@ -40,46 +40,6 @@
 	#Kodi Specific
 import xbmc,xbmcaddon,xbmcgui,xbmcplugin,xbmcvfs
 import sys
-# Custom Player class for reconnect logic
-class ReconnectPlayer(xbmc.Player):
-	def __init__(self, url, max_retries=5, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.url = url
-		self.max_retries = max_retries
-		self.retry_count = 0
-		self._stopped = False
-
-	def play_with_retries(self):
-		self.retry_count = 0
-		self._stopped = False
-		while self.retry_count < self.max_retries:
-			self.play(self.url)
-			# Wait for playback to start or fail
-			for _ in range(20):  # Wait up to 2 seconds
-				xbmc.sleep(100)
-				if self.isPlaying():
-					return True
-				if self._stopped:
-					break
-			self.retry_count += 1
-		return False
-
-	def onPlayBackStopped(self):
-		self._stopped = True
-		if self.retry_count < self.max_retries:
-			xbmc.log(f'IPTVXC: Playback stopped, retrying ({self.retry_count+1}/{self.max_retries})', LOG_NOTICE)
-			self.retry_count += 1
-			self.play(self.url)
-
-	def onPlayBackEnded(self):
-		self._stopped = True
-
-	def onPlayBackError(self):
-		self._stopped = True
-		if self.retry_count < self.max_retries:
-			xbmc.log(f'IPTVXC: Playback error, retrying ({self.retry_count+1}/{self.max_retries})', LOG_NOTICE)
-			self.retry_count += 1
-			self.play(self.url)
 # Select available log level constant to use for notice-level logging
 if hasattr(xbmc, 'LOGNOTICE'):
 	LOG_NOTICE = xbmc.LOGNOTICE
@@ -174,7 +134,7 @@ def home():
 	tools.addDir('Extras','url',16,iconextras,background,'')
 
 def livecategory():
-	data = tools.OPEN_URL(live_url)
+	data = tools.OPEN_URL_CACHED(live_url, ttl_minutes=tools.CONTENT_CACHE_TTL_TV)
 	if not data:
 		return
 	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
@@ -182,6 +142,11 @@ def livecategory():
 		root = ET.fromstring(data)
 	except Exception:
 		return
+		try:
+		    xbmc.log(f'{ADDON_ID}: Parsed params -> url={url} name={name} mode={mode} icon={iconimage} description={description} tmdb_id={tmdb_id}', LOG_NOTICE)
+		except Exception:
+		    pass
+
 	for ch in root.findall('.//channel'):
 		t = ch.findtext('title', default='')
 		name = tools.b64(t) if t else ''
@@ -192,7 +157,7 @@ def livecategory():
 
 def Livelist(url):
 	url  = buildcleanurl(url)
-	data = tools.OPEN_URL(url)
+	data = tools.OPEN_URL_CACHED(url, ttl_minutes=tools.CONTENT_CACHE_TTL_TV)
 	if not data:
 		return
 	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
@@ -216,7 +181,7 @@ def Livelist(url):
 			tools.addDir('%s' % name, url1, 4, thumb, background, desc)
 
 def series_cats(url):
-	raw = tools.OPEN_URL(player_api+'&action=get_series_categories')
+	raw = tools.OPEN_URL_CACHED(player_api+'&action=get_series_categories', ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
 	if not raw:
 		return
 	try:
@@ -231,7 +196,7 @@ def series_cats(url):
 			tools.addDir(name, player_api+'&action=get_series&category_id='+str(cid), 25, icon, background, '')
 
 def serieslist(url):
-	raw = tools.OPEN_URL(url)
+	raw = tools.OPEN_URL_CACHED(url, ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
 	if not raw:
 		return
 	try:
@@ -246,7 +211,7 @@ def serieslist(url):
 			tools.addDir(ser.get('name',''), player_api+'&action=get_series_info&series_id='+str(ser.get('series_id','')), 19, ser.get('cover',''), background, '')
 
 def series_seasons(url):
-	raw = tools.OPEN_URL(url)
+	raw = tools.OPEN_URL_CACHED(url, ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
 	if not raw:
 		return
 	try:
@@ -258,7 +223,7 @@ def series_seasons(url):
 		tools.addDir('Season - '+str(season), url+'&season_number='+str(season), 20, info.get('cover',''), (info.get('backdrop_path') or [''])[0] if info.get('backdrop_path') else '', '')
 
 def season_list(url):
-	raw = tools.OPEN_URL(url)
+	raw = tools.OPEN_URL_CACHED(url, ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
 	if not raw:
 		return
 	try:
@@ -316,7 +281,7 @@ def season_list(url):
 		else:
 			tools.addDir(title, play, 4, cover, cover, '')
 def vod(url):
-	data = tools.OPEN_URL(vod_url if url == 'vod' else buildcleanurl(url))
+	data = tools.OPEN_URL_CACHED(vod_url if url == 'vod' else buildcleanurl(url), ttl_minutes=tools.CONTENT_CACHE_TTL_MOVIES)
 	if not data:
 		return
 	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
@@ -463,7 +428,7 @@ def catchup():
 	listcatchup()
 
 def listcatchup():
-	raw = tools.OPEN_URL(panel_api)
+	raw = tools.OPEN_URL_CACHED(panel_api, ttl_minutes=tools.CONTENT_CACHE_TTL_TV)
 	if not raw:
 		return
 	try:
@@ -523,21 +488,107 @@ def tvarchive(name,description):
 def tvguide():
 		xbmc.executebuiltin('ActivateWindow(TVGuide)')
 
+def _playback_watchdog():
+	"""Background thread: dismiss busy dialogs when playback stops.
+
+	When the user presses X on a live IPTV stream, Kodi's FFmpeg demuxer
+	can block for 10-30 s trying to close the TCP connection.  During that
+	time Kodi shows a 'busydialog' that nothing ever closes, making the UI
+	appear frozen.  This watchdog detects the playing→stopped transition
+	and aggressively hammers Dialog.Close until the UI is responsive again.
+	"""
+	import threading
+	player = xbmc.Player()
+	monitor = xbmc.Monitor()
+
+	# 1. Wait for playback to actually start (max 30 s)
+	started = False
+	for _ in range(60):
+		if monitor.abortRequested():
+			return
+		if player.isPlaying():
+			started = True
+			break
+		xbmc.sleep(500)
+
+	if not started:
+		# Playback never began — clean up and leave
+		xbmc.executebuiltin('Dialog.Close(busydialog)')
+		xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
+		xbmc.log(f'{ADDON_ID}: watchdog – playback never started, exiting', LOG_NOTICE)
+		return
+
+	xbmc.log(f'{ADDON_ID}: watchdog – playback started, monitoring', LOG_NOTICE)
+
+	# 2. Wait until the player stops
+	while not monitor.abortRequested():
+		if not player.isPlaying():
+			break
+		xbmc.sleep(500)
+
+	xbmc.log(f'{ADDON_ID}: watchdog – playback stopped, dismissing busy dialogs', LOG_NOTICE)
+
+	# 3. Aggressively close busy dialogs for up to 10 s so the UI never
+	#    appears stuck while FFmpeg tears down the connection.
+	for _ in range(20):
+		if monitor.abortRequested():
+			return
+		xbmc.executebuiltin('Dialog.Close(busydialog)')
+		xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
+		xbmc.sleep(500)
+
+def _start_playback_watchdog():
+	"""Launch the playback watchdog in a daemon thread."""
+	import threading
+	t = threading.Thread(target=_playback_watchdog,
+						 name='IPTVXC-PlayWatchdog', daemon=True)
+	t.start()
+
 def stream_video(url):
 	url = buildcleanurl(url)
-	max_retries = 5
-	liz = xbmcgui.ListItem('')
-	liz.setArt({'icon':icon, 'thumb':icon})
-	liz.setInfo(type='Video', infoLabels={'Title': '', 'Plot': ''})
-	liz.setProperty('IsPlayable','true')
-	liz.setPath(str(url))
+	xbmc.log(f'{ADDON_ID}: stream_video() resolving URL: {url[:120]}', LOG_NOTICE)
+	liz = xbmcgui.ListItem(path=str(url))
+	# ALWAYS use the local addon icon for the playback ListItem.
+	# Remote icon URLs (e.g. from the IPTV provider) can be unreachable and
+	# Kodi's texture-cache / VideoPlayer FileCache will block for up to 30 s
+	# per curl timeout — causing the "freeze on stop" bug.
+	liz.setArt({'icon': icon, 'thumb': icon})
+	liz.setInfo(type='Video', infoLabels={'Title': name, 'Plot': description})
+	# Prevent Kodi from probing the stream to detect content type — the
+	# extra HEAD / partial-GET can hang on stop and delay teardown.
+	liz.setContentLookup(False)
 	xbmcplugin.setResolvedUrl(int(sys.argv[1]), True, liz)
-	# Use custom player for reconnect logic
-	player = ReconnectPlayer(url, max_retries)
-	success = player.play_with_retries()
-	if not success:
-		xbmcgui.Dialog().notification('Playback Error', 'Failed to start or resume stream after 5 attempts.', icon, 5000)
-	# Trakt scrobbling removed
+	xbmc.log(f'{ADDON_ID}: stream_video() resolved OK', LOG_NOTICE)
+	# Force-close Kodi's busy dialog in case it lingers while the player
+	# buffers or while a remote thumbnail download is blocking the main
+	# thread.  A short sleep lets setResolvedUrl propagate first.
+	xbmc.sleep(200)
+	xbmc.executebuiltin('Dialog.Close(busydialog)')
+	xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
+	# Start background watchdog (best-effort) and also keep this script
+	# alive for a short while.  By spinning in the main thread we can
+	# repeatedly close dialogs even if the addon process is terminated
+	# by Kodi shortly after resolving the URL.
+	_start_playback_watchdog()
+	player = xbmc.Player()
+	# Wait for playback to actually start (up to 10 s), then exit as soon
+	# as it stops.  This prevents the invoker staying alive for the full
+	# 30-second guard window after the user presses X to stop.
+	start = time.time()
+	playback_started = False
+	while time.time() - start < 30:
+		if player.isPlaying():
+			playback_started = True
+		elif playback_started:
+			# Playback started and has now stopped — clean up and exit
+			xbmc.executebuiltin('Dialog.Close(busydialog)')
+			xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
+			break
+		elif time.time() - start > 10:
+			# Playback never started within 10 s — give up
+			break
+		# small delay prevents hogging CPU
+		xbmc.sleep(500)
 
 def searchdialog():
 	search = control.inputDialog(heading='Search '+ADDON_NAME+':')
@@ -850,7 +901,7 @@ def extras():
 	tools.addDir('[COLOR grey][I]Setup PVR Guide (disabled)[/I][/COLOR]','placeholder',-1,icon,background,'')
 	tools.addDir('[COLOR grey][I]Install PVR Guide (disabled)[/I][/COLOR]','placeholder',-1,icon,background,'')
 	tools.addDir('[COLOR grey][I]Refresh M3U (disabled)[/I][/COLOR]','placeholder',-1,icon,background,'')
-	tools.addDir('[COLOR grey][I]Clear Cache (disabled)[/I][/COLOR]','placeholder',-1,icon,background,'')
+	tools.addDir('Clear Cache','clearcache',10,icon,background,'')
 
 params=tools.get_params()
 url=None
@@ -1032,6 +1083,16 @@ elif mode==10 and url == 'RefM3U':
 elif mode==10 and url == 'clearcache':
 	from resources.modules import tools
 	tools.clear_cache()
+elif mode==10 and url == 'clear_icon_cache':
+	from resources.modules import tools
+	import os
+	cache_file = os.path.join(tools.CACHE_DIR, 'host_probe_cache.json')
+	try:
+		if os.path.exists(cache_file):
+			os.remove(cache_file)
+		tools.LogNotify(ADDON_NAME, 'Icon host cache cleared')
+	except Exception as e:
+		tools.LogNotify(ADDON_NAME, 'Failed to clear cache: %s' % str(e))
 elif mode==16:
 	extras()
 	
@@ -1063,4 +1124,9 @@ elif mode=='start':
 	home()
 
 
-xbmcplugin.endOfDirectory(int(sys.argv[1]))
+if mode != 4:
+	try:
+		xbmc.log(f'{ADDON_ID}: calling endOfDirectory for mode={mode}', LOG_NOTICE)
+	except Exception:
+		pass
+	xbmcplugin.endOfDirectory(int(sys.argv[1]))

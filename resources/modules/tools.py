@@ -53,6 +53,8 @@ from urllib.parse import urlparse
 	#Addon Specific
 from urllib.request import Request, urlopen
 from resources.modules import control
+import threading
+from resources.modules.ffprobe_helper import probe_stream
 
 ##########################=VARIABLES=#######################################
 
@@ -161,7 +163,7 @@ def safe_icon(iconimage, fallback=None):
 
 	For local paths, data URIs, or empty strings the value is returned as-is.
 	The very first call for a given hostname does a fast TCP probe (2 s max).
-	"""
+	 """
 	if fallback is None:
 		fallback = ICON
 	if not iconimage:
@@ -255,28 +257,43 @@ def quality_tag_from_name(name):
     return tag.strip()
 
 def quality_tag_from_resolution(width, height, fps=None):
-    """Return a coloured tag from numeric width/height (e.g. from VOD info)."""
-    h = int(height) if height else 0
-    if h >= 2160:
-        label, colour = '4K', 'FF9C27B0'
-    elif h >= 1440:
-        label, colour = '1440p', 'FF2196F3'
-    elif h >= 1080:
-        label, colour = '1080p', 'FF4CAF50'
-    elif h >= 720:
-        label, colour = '720p', 'FFFFAB40'
-    elif h > 0:
-        label, colour = 'SD', 'FFFF5252'
-    else:
-        return ''
-    tag = '[COLOR %s][B]%s[/B][/COLOR]' % (colour, label)
-    if fps:
-        try:
-            fps_val = str(int(float(str(fps))))
-            tag += ' [COLOR FF888888]%sfps[/COLOR]' % fps_val
-        except (ValueError, TypeError):
-            pass
-    return tag
+	"""Return plain text tag from numeric width/height/fps."""
+	h = int(height) if height else 0
+	if h >= 2160:
+		label = '4K'
+	elif h >= 1440:
+		label = '1440p'
+	elif h >= 1080:
+		label = '1080p'
+	elif h >= 720:
+		label = '720p'
+	elif h > 0:
+		label = 'SD'
+	else:
+		return ''
+	tag = label
+	if fps:
+		try:
+			fps_val = int(round(float(str(fps))))
+			tag += f' {fps_val} FPS'
+		except (ValueError, TypeError):
+			pass
+	return tag
+
+def _update_listitem_resolution(liz, url, name):
+	try:
+		result = probe_stream(url)
+		if result:
+			tag = quality_tag_from_resolution(result.get('width'), result.get('height'), result.get('fps'))
+			if tag:
+				display_name = f'{name} - {tag}'
+				liz.setLabel(display_name)
+				liz.setInfo('Video', {'Title': display_name})
+				xbmc.log(f'IPTVXC: ffprobe tag for {name}: {tag}', 1)
+		else:
+			xbmc.log(f'IPTVXC: ffprobe failed for {name}', 1)
+	except Exception as e:
+		xbmc.log(f'IPTVXC: ffprobe error for {name}: {e}', 1)
 
 def addDir(name,url,mode,iconimage,fanart,description):
 	# Use the local addon icon in the plugin URL parameter to prevent Kodi's
@@ -289,26 +306,36 @@ def addDir(name,url,mode,iconimage,fanart,description):
 	except Exception:
 		pass
 	ok=True
+	cm = []
 	# Append resolution/quality tag to the display name
 	display_name = name
-	try:
-		if GET_SET.getSetting('show_stream_tags') == 'true':
-			qt = quality_tag_from_name(name)
-			if qt:
-				display_name = '%s  %s' % (name, qt)
-	except Exception:
-		pass
 	# Use safe_icon to avoid Kodi blocking on unreachable icon servers
 	safe_img = safe_icon(iconimage)
-	liz=xbmcgui.ListItem(display_name)
-	liz.setArt({'icon':safe_img, 'thumb':safe_img})
-	liz.setInfo( type="Video", infoLabels={"Title": display_name,"Plot":description,})
+	liz = xbmcgui.ListItem(display_name)
+	liz.setArt({'icon': safe_img, 'thumb': safe_img})
+	liz.setInfo(type="Video", infoLabels={"Title": display_name, "Plot": description})
 	liz.setProperty('fanart_image', fanart)
-	# Favorites context menu
-	cm = []
-	_fav_modes = (2, 3, 4, 12, 13, 18, 19, 20, 25)
 	try:
-		if int(mode) in _fav_modes:
+		if GET_SET.getSetting('show_stream_tags') == 'true':
+			result = probe_stream(url)
+			if result:
+				tag = quality_tag_from_resolution(result.get('width'), result.get('height'), result.get('fps'))
+				try:
+					if GET_SET.getSetting('show_stream_tags') == 'true':
+						result = probe_stream(url)
+						if result:
+							tag = quality_tag_from_resolution(result.get('width'), result.get('height'), result.get('fps'))
+							if tag:
+								display_name = f'{name} - {tag}'
+								liz.setLabel(display_name)
+								liz.setInfo('Video', {'Title': display_name})
+						else:
+							display_name = f'{name} - [Loading...]'
+							liz.setLabel(display_name)
+							liz.setInfo('Video', {'Title': display_name})
+							threading.Thread(target=_update_listitem_resolution, args=(liz, url, name), daemon=True).start()
+				except Exception:
+					pass
 			fav_url = sys.argv[0] + "?mode=31&url=" + urllib.parse.quote_plus(str(url)) + "&name=" + urllib.parse.quote_plus(str(name)) + "&iconimage=" + urllib.parse.quote_plus(str(iconimage)) + "&description=" + urllib.parse.quote_plus(str(description)) + "&fav_mode=" + str(mode)
 			if is_favorite(url):
 				cm.append(('[COLOR red]Remove from Favorites[/COLOR]', 'RunPlugin(' + fav_url + ')'))
@@ -343,28 +370,35 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 			xbmc.log('[IPTVXC] No TMDB ID found in description (first 200 chars): %s' % description[:200], xbmc.LOGDEBUG)
 	# Append resolution/quality tag to the display name
 	display_name = name
-	try:
-		if GET_SET.getSetting('show_stream_tags') == 'true':
-			qt = quality_tag_from_name(name)
-			if qt:
-				display_name = '%s  %s' % (name, qt)
-	except Exception:
-		pass
-	
-	u=sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(ICON))+"&description="+urllib.parse.quote_plus(str(description))+"&year="+urllib.parse.quote_plus(str(year))+"&tmdb_id="+urllib.parse.quote_plus(str(tmdb_id))
-	ok=True
+	u = sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(ICON))+"&description="+urllib.parse.quote_plus(str(description))+"&year="+urllib.parse.quote_plus(str(year))+"&tmdb_id="+urllib.parse.quote_plus(str(tmdb_id))
 	# Use safe_icon to avoid Kodi blocking on unreachable icon servers
 	safe_img = safe_icon(iconimage)
-	liz=xbmcgui.ListItem(display_name)
-	liz.setArt({'icon':safe_img, 'thumb':safe_img})
-	liz.setInfo( type="Video", infoLabels={"Title": display_name,"Plot":description,"Rating":rating,"Year":year,"Duration":runtime,"Cast":cast,"Genre":genre})
+	liz = xbmcgui.ListItem(display_name)
+	liz.setArt({'icon': safe_img, 'thumb': safe_img})
+	liz.setInfo(type="Video", infoLabels={"Title": display_name, "Plot": description, "Rating": rating, "Year": year, "Duration": runtime, "Cast": cast, "Genre": genre})
 	liz.setProperty('fanart_image', fanart)
-	liz.setProperty("IsPlayable","true")
-	cm = []
-	cm.append(('Movie Information', 'XBMC.Action(Info)'))
-	
-	# Add Trakt context menu items if enabled
+	liz.setProperty("IsPlayable", "true")
 	try:
+		if GET_SET.getSetting('show_stream_tags') == 'true':
+			result = probe_stream(url)
+			if result:
+				tag = quality_tag_from_resolution(result.get('width'), result.get('height'), result.get('fps'))
+				try:
+					if GET_SET.getSetting('show_stream_tags') == 'true':
+						result = probe_stream(url)
+						if result:
+							tag = quality_tag_from_resolution(result.get('width'), result.get('height'), result.get('fps'))
+							if tag:
+								display_name = f'{name} - {tag}'
+								liz.setLabel(display_name)
+								liz.setInfo('Video', {'Title': display_name})
+						else:
+							display_name = f'{name} - [Loading...]'
+							liz.setLabel(display_name)
+							liz.setInfo('Video', {'Title': display_name})
+							threading.Thread(target=_update_listitem_resolution, args=(liz, url, name), daemon=True).start()
+				except Exception:
+					pass
 		if GET_SET.getSetting('trakt_enabled') == 'true':
 			# Add to Trakt Watchlist
 			trakt_watchlist_url = sys.argv[0]+"?url=TRAKT_WATCHLIST&mode=23&name="+urllib.parse.quote_plus(str(name))+"&year="+str(year)
@@ -443,7 +477,7 @@ def OPEN_URL_CACHED(url, ttl_minutes=30):
 
 	Returns cached content if the file exists and is younger than ttl_minutes.
 	Otherwise fetches from network, stores to cache, and returns the result.
-	"""
+	 """
 	_ensure_cache_dir()
 	key = _cache_key(url)
 	cache_file = os.path.join(CACHE_DIR, key + '.dat')

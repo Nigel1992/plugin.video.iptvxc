@@ -1,3 +1,8 @@
+# Version 3.8.1 (2026-03-05)
+
+### 🐛 Bug Fixes
+- Fixed loading spinner staying visible when playing a channel from TV Guide or Last Played
+
 # Version 3.8.0 (2026-03-05)
 
 ### ✨ New Features

@@ -1239,6 +1239,9 @@ elif mode==37:
 		liz.setContentLookup(False)
 		xbmc.Player().play(stream_url, liz)
 		epg.start_epg_updater(player_api, stream_url, ch_name or '')
+		xbmc.sleep(200)
+		xbmc.executebuiltin('Dialog.Close(busydialog)')
+		xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
 
 elif mode==35:
 	# "Last Played" — just play the channel directly (it's live, show info is stale)
@@ -1260,8 +1263,9 @@ elif mode==35:
 	liz.setContentLookup(False)
 	xbmc.Player().play(play_url, liz)
 	epg.start_epg_updater(player_api, play_url, name or '')
-
-
+	xbmc.sleep(200)
+	xbmc.executebuiltin('Dialog.Close(busydialog)')
+	xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
 
 
 elif mode=='start':

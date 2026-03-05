@@ -52,6 +52,15 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 - Speed test and advanced settings helpers
 - Robust handling of inconsistent provider APIs
 - Icon-host reachability checks — dead icon servers never stall the UI
+- **Custom EPG / TV Guide** — full in-addon EPG window with two-panel layout (channels + programme schedule), category browsing, search for categories and channels, progress bars on currently airing shows, and info panel
+- **EPG remembers last category** — reopening the TV Guide auto-loads the previously viewed category
+- **Programme click plays channel** — selecting any programme in the schedule plays that channel directly
+- **Live programme info in player overlay** — pressing Info (i) during playback shows the current programme title, description, and channel name
+- **Auto-updating EPG info** — background thread refreshes programme metadata every 60 seconds during playback so the info overlay always shows the current show
+- **Favorites** — long-press any channel, movie, or series to add/remove from Favorites; new Favorites menu on home screen for instant access to your most-watched content
+- **Recently Watched History** — automatically logs the last 25 streams played (configurable); accessible from the home screen with timestamps; clear from Extras
+- **Multi-Server Profiles** — save, switch between, and delete multiple IPTV server credentials from Settings → Switch Server; cache is auto-cleared on switch
+- **Last Played** — the last played stream appears at the top of home as a quick-resume item
 
 ---
 
@@ -137,9 +146,31 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 
 For a complete list of changes and release history, see [CHANGELOG.md](CHANGELOG.md).
 
+---
 
+## 🚀 What's New (v3.8.x)
+
+- **Custom EPG / TV Guide** — full in-addon EPG window with two-panel layout (channels + programme schedule), category browsing, search for categories and channels, progress bars on currently airing shows, and info panel
+- **EPG remembers last category** — reopening the TV Guide auto-loads the previously viewed category
+- **Programme click plays channel** — selecting any programme in the schedule plays that channel directly
+- **Live programme info in player overlay** — pressing Info (i) during playback shows the current programme title, description, and channel name
+- **Auto-updating EPG info** — background thread refreshes programme metadata every 60 seconds during playback so the info overlay always shows the current show
+- **Favorites** — long-press any channel, movie, or series to add/remove from Favorites; new Favorites menu on home screen for instant access to your most-watched content
+- **Recently Watched History** — automatically logs the last 25 streams played (configurable); accessible from the home screen with timestamps; clear from Extras
+- **Multi-Server Profiles** — save, switch between, and delete multiple IPTV server credentials from Settings → Switch Server; cache is auto-cleared on switch
+- **Last Played** — the last played stream appears at the top of home as a quick-resume item
+- **Persistent file-based caching** for Live TV, Movies/VOD, Series, Catch-up
+- **User-configurable cache expiry** in Settings → Cache (5 minutes → 7 days)
+- **Clear content cache** button in Settings → Cache
+- **Speed test and advanced settings helpers**
+- **Robust handling of inconsistent provider APIs**
+- **Icon-host reachability checks** — dead icon servers never stall the UI
+- **No pvr.iptvsimple dependency** — EPG is fully self-contained within the addon
+
+For full details, see [CHANGELOG.md](CHANGELOG.md).
 
 ---
+
 ## 🛠️ Troubleshooting
 
 - **No content visible?**

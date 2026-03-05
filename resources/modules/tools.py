@@ -244,6 +244,20 @@ def addDir(name,url,mode,iconimage,fanart,description):
 	liz.setArt({'icon':safe_img, 'thumb':safe_img})
 	liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description,})
 	liz.setProperty('fanart_image', fanart)
+	# Favorites context menu
+	cm = []
+	_fav_modes = (2, 3, 4, 12, 13, 18, 19, 20, 25)
+	try:
+		if int(mode) in _fav_modes:
+			fav_url = sys.argv[0] + "?mode=31&url=" + urllib.parse.quote_plus(str(url)) + "&name=" + urllib.parse.quote_plus(str(name)) + "&iconimage=" + urllib.parse.quote_plus(str(iconimage)) + "&description=" + urllib.parse.quote_plus(str(description)) + "&fav_mode=" + str(mode)
+			if is_favorite(url):
+				cm.append(('[COLOR red]Remove from Favorites[/COLOR]', 'RunPlugin(' + fav_url + ')'))
+			else:
+				cm.append(('[COLOR gold]Add to Favorites[/COLOR]', 'RunPlugin(' + fav_url + ')'))
+	except Exception:
+		pass
+	if cm:
+		liz.addContextMenuItems(cm)
 	if mode==4:
 		liz.setProperty("IsPlayable","true")
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
@@ -292,6 +306,13 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 			cm.append(('Mark as Watched on Trakt', 'RunPlugin('+trakt_watched_url+')'))
 	except:
 		pass
+	
+	# Favorites context menu
+	fav_url = sys.argv[0] + "?mode=31&url=" + urllib.parse.quote_plus(str(url)) + "&name=" + urllib.parse.quote_plus(str(name)) + "&iconimage=" + urllib.parse.quote_plus(str(iconimage)) + "&description=" + urllib.parse.quote_plus(str(description)) + "&fav_mode=" + str(mode)
+	if is_favorite(url):
+		cm.append(('[COLOR red]Remove from Favorites[/COLOR]', 'RunPlugin(' + fav_url + ')'))
+	else:
+		cm.append(('[COLOR gold]Add to Favorites[/COLOR]', 'RunPlugin(' + fav_url + ')'))
 	
 	liz.addContextMenuItems(cm,replaceItems=True)
 	if mode==19 or mode==20:
@@ -515,6 +536,30 @@ def gen_m3u(url, path):
 				if DP.iscanceled(): break
 		DP.close
 		DIALOG.ok(ADDON_NAME, 'Found ' + str(i) + ' Channels')
+
+def gen_m3u_silent(url, path):
+	"""Regenerate M3U without any dialogs (for background/startup use)."""
+	try:
+		parse = json.loads(OPEN_URL(url))
+	except Exception:
+		return
+	i = 1
+	with open(path, 'w+', encoding='utf-8') as ftg:
+		ftg.write('#EXTM3U\n')
+		for items in parse.get('available_channels', {}):
+			a = parse['available_channels'][items]
+			if a.get('stream_type') == 'live':
+				b = '#EXTINF:-1 channel-id="{0}" tvg-id="{1}" tvg-name="{2}" tvg-logo="{3}" channel-id="{4}" group-title="{5}",{6}'.format(
+					i, a.get('epg_channel_id',''), a.get('epg_channel_id',''), a.get('stream_icon',''),
+					a.get('name',''), a.get('category_name',''), a.get('name',''))
+				if parse['server_info']['server_protocol'] == 'https':
+					port = parse['server_info']['https_port']
+				else:
+					port = parse['server_info']['port']
+				dns = '{0}://{1}:{2}'.format(parse['server_info']['server_protocol'], parse['server_info']['url'], port)
+				c = '{0}/{1}/{2}/{3}'.format(dns, parse['user_info']['username'], parse['user_info']['password'], a['stream_id'])
+				ftg.write(b + '\n' + c + '\n')
+				i += 1
 
 
 # New helper: multi-stage endpoint verifier
@@ -754,3 +799,181 @@ def start_expiry_background_check(interval_hours=None):
     thr.running = True
     thr.start()
     return thr
+
+
+# ---------------------------------------------------------------------------
+#  Favorites system
+# ---------------------------------------------------------------------------
+FAVORITES_FILE = os.path.join(ADDON_DATA, 'favorites.json')
+
+def load_favorites():
+    try:
+        if os.path.exists(FAVORITES_FILE):
+            with open(FAVORITES_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return []
+
+def save_favorites(favs):
+    try:
+        os.makedirs(ADDON_DATA, exist_ok=True)
+        with open(FAVORITES_FILE, 'w', encoding='utf-8') as f:
+            json.dump(favs, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def add_favorite(url, name, mode, iconimage, fanart, description):
+    favs = load_favorites()
+    for fav in favs:
+        if fav.get('url') == url:
+            return False
+    favs.append({
+        'url': url, 'name': name, 'mode': int(mode),
+        'iconimage': iconimage, 'fanart': fanart,
+        'description': description
+    })
+    save_favorites(favs)
+    return True
+
+def remove_favorite(url):
+    favs = load_favorites()
+    favs = [f for f in favs if f.get('url') != url]
+    save_favorites(favs)
+
+def is_favorite(url):
+    favs = load_favorites()
+    return any(f.get('url') == url for f in favs)
+
+
+# ---------------------------------------------------------------------------
+#  Recently Watched History
+# ---------------------------------------------------------------------------
+HISTORY_FILE = os.path.join(ADDON_DATA, 'history.json')
+
+def load_history():
+    try:
+        if os.path.exists(HISTORY_FILE):
+            with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return []
+
+def save_history(history):
+    try:
+        os.makedirs(ADDON_DATA, exist_ok=True)
+        with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def add_to_history(url, name, iconimage, description):
+    history = load_history()
+    history = [h for h in history if h.get('url') != url]
+    history.insert(0, {
+        'url': url, 'name': name,
+        'iconimage': iconimage, 'description': description,
+        'timestamp': time.time()
+    })
+    try:
+        max_items = int(GET_SET.getSetting('max_history_items') or '25')
+    except Exception:
+        max_items = 25
+    history = history[:max_items]
+    save_history(history)
+
+def clear_history():
+    save_history([])
+
+
+# ---------------------------------------------------------------------------
+#  Last Played (for auto-resume)
+# ---------------------------------------------------------------------------
+LAST_PLAYED_FILE = os.path.join(ADDON_DATA, 'last_played.json')
+
+def save_last_played(url, name, iconimage, description):
+    try:
+        os.makedirs(ADDON_DATA, exist_ok=True)
+        with open(LAST_PLAYED_FILE, 'w', encoding='utf-8') as f:
+            json.dump({
+                'url': url, 'name': name,
+                'iconimage': iconimage, 'description': description,
+                'timestamp': time.time()
+            }, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+def load_last_played():
+    try:
+        if os.path.exists(LAST_PLAYED_FILE):
+            with open(LAST_PLAYED_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return None
+
+
+# ---------------------------------------------------------------------------
+#  Server Profiles
+# ---------------------------------------------------------------------------
+PROFILES_FILE = os.path.join(ADDON_DATA, 'profiles.json')
+
+def load_profiles():
+    try:
+        if os.path.exists(PROFILES_FILE):
+            with open(PROFILES_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return []
+
+def save_profiles(profiles):
+    try:
+        os.makedirs(ADDON_DATA, exist_ok=True)
+        with open(PROFILES_FILE, 'w', encoding='utf-8') as f:
+            json.dump(profiles, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def save_current_as_profile(profile_name):
+    profiles = load_profiles()
+    dns = GET_SET.getSetting('DNS')
+    user = GET_SET.getSetting('Username')
+    pw = GET_SET.getSetting('Password')
+    if not (dns and user):
+        return False
+    for p in profiles:
+        if p.get('name') == profile_name:
+            p['dns'] = dns
+            p['username'] = user
+            p['password'] = pw
+            save_profiles(profiles)
+            return True
+    profiles.append({
+        'name': profile_name,
+        'dns': dns,
+        'username': user,
+        'password': pw
+    })
+    save_profiles(profiles)
+    return True
+
+def switch_profile(index):
+    profiles = load_profiles()
+    if 0 <= index < len(profiles):
+        p = profiles[index]
+        GET_SET.setSetting('DNS', p['dns'])
+        GET_SET.setSetting('Username', p['username'])
+        GET_SET.setSetting('Password', p['password'])
+        clear_addon_cache()
+        return p['name']
+    return None
+
+def delete_profile(index):
+    profiles = load_profiles()
+    if 0 <= index < len(profiles):
+        removed = profiles.pop(index)
+        save_profiles(profiles)
+        return removed.get('name', '')
+    return None

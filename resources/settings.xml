@@ -21,4 +21,7 @@
 		<setting id="expiry_notify_background" type="bool" label="Enable periodic background expiry checks (while addon open)" default="false" />
 		<setting id="expiry_notify_interval_hours" type="number" label="Expiry check interval (hours)" default="24" />
 	</category>
+	<category label="Features">
+		<setting id="max_history_items" type="number" label="Max items in watch history" default="25" />
+	</category>
 </settings>

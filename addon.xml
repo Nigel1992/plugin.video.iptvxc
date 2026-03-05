@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.iptvxc" name="[B][COLOR red]XCUI Streams[/COLOR][/B]" version="3.6.0" provider-name="Nigel1992">
+<addon id="plugin.video.iptvxc" name="[B][COLOR red]XCUI Streams[/COLOR][/B]" version="3.8.0" provider-name="Nigel1992">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>

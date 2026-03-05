@@ -1,3 +1,33 @@
+# Version 3.8.0 (2026-03-05)
+
+### ✨ New Features
+- **Custom EPG / TV Guide** — full in-addon EPG window with two-panel layout (channels + programme schedule), category browsing, search for categories and channels, progress bars on currently airing shows, and info panel
+- **EPG remembers last category** — reopening the TV Guide auto-loads the previously viewed category
+- **Programme click plays channel** — selecting any programme in the schedule plays that channel directly
+- **Live programme info in player overlay** — pressing Info (i) during playback shows the current programme title, description, and channel name
+- **Auto-updating EPG info** — background thread refreshes programme metadata every 60 seconds during playback so the info overlay always shows the current show
+- **Kodistubs for development** — added pyrightconfig.json and kodistubs for linter-clean development
+
+### 🔧 Improvements
+- Simplified Last Played — plays immediately without confirmation dialog, no stale show info
+- All playback paths (stream, EPG, last played/history) now set programme info and start the EPG updater
+- Removed pvr.iptvsimple dependency — EPG is fully self-contained within the addon
+
+# Version 3.7.0 (2026-03-05)
+
+### ✨ New Features
+- **Favorites** — long-press any channel, movie, or series to add/remove from Favorites; new Favorites menu on home screen for instant access to your most-watched content
+- **Recently Watched History** — automatically logs the last 25 streams played (configurable); accessible from the home screen with timestamps; clear from Extras
+- **EPG Now & Next** — live channel listings can now show the currently airing programme name inline (fetched in parallel with threading); enable in Settings → Features
+- **Multi-Server Profiles** — save, switch between, and delete multiple IPTV server credentials from Settings → Switch Server; cache is auto-cleared on switch
+- **Auto-Resume / Last Played** — the last played stream appears at the top of home as a quick-resume item; optional auto-play on first launch per Kodi session (Settings → Features)
+
+### 🔧 Improvements
+- New **Settings → Features** category for EPG Now Playing toggle, auto-resume toggle, and history size
+- Context menu "Add to Favorites" / "Remove from Favorites" on all content items (Live, VOD, Series, Catchup)
+- Favorites, history, last played, and profiles persist to JSON files in addon_data
+- EPG data cached for 5 minutes to keep channel listings snappy after first load
+
 # Version 3.6.0 (2026-03-03)
 
 ### 🐛 Bug Fixes

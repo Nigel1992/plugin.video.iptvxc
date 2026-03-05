@@ -62,7 +62,7 @@ import urllib.parse,urllib.error,json,datetime,zipfile,shutil
 import xml.etree.ElementTree as ET
 from datetime import date
 	#Addon Specific
-from resources.modules import control,tools,popup,speedtest
+from resources.modules import control,tools,popup,speedtest,epg
 ##########################=VARIABLES=#######################################
 ADDON = xbmcaddon.Addon()
 ADDONPATH = ADDON.getAddonInfo("path")
@@ -121,12 +121,33 @@ def buildcleanurl(url):
 	return url
 
 def home():
+	# Last Played quick access
+	last = tools.load_last_played()
+	if last and last.get('url'):
+		ts = last.get('timestamp', 0)
+		ago = ''
+		if ts:
+			delta = int(time.time() - ts)
+			if delta < 60:
+				ago = 'just now'
+			elif delta < 3600:
+				ago = '%dm ago' % (delta // 60)
+			elif delta < 86400:
+				ago = '%dh ago' % (delta // 3600)
+			else:
+				ago = '%dd ago' % (delta // 86400)
+		channel_name = last.get('name', 'Last Channel')
+		label = '[B][COLOR lime]\u25b6 Last Played: %s[/COLOR][/B]' % channel_name
+		if ago:
+			label = '[B][COLOR lime]\u25b6 Last Played (%s): %s[/COLOR][/B]' % (ago, channel_name)
+		tools.addDir(label, last['url'], 35, last.get('iconimage', icon), background, '')
+	tools.addDir('Favorites','url',30,icon,background,'')
+	tools.addDir('Recently Watched','url',32,icon,background,'')
 	tools.addDir('Account Information','url',6,iconaccount,background,'')
 	tools.addDir('Live TV','live',1,iconlive,background,'')
 	tools.addDir('Movies/VOD','vod',3,iconMoviesod,background,'')
 	tools.addDir('Series','live',18,iconTvseries,background,'')
-	if xbmc.getCondVisibility('System.HasAddon(pvr.iptvsimple)'):
-		tools.addDir('TV Guide','pvr',7,icontvguide,background,'')
+	tools.addDir('[COLOR FF42A5F5][B]TV Guide[/B][/COLOR]','epg',37,icontvguide,background,'')
 	tools.addDir('Catchup TV','url',12,iconcatchup,background,'')
 	tools.addDir('Search','url',5,iconsearch,background,'')
 	# Trakt.tv integration removed
@@ -167,7 +188,7 @@ def Livelist(url):
 		return
 	for ch in root.findall('.//channel'):
 		t = ch.findtext('title', default='')
-		name = re.sub(r'\[.*?min ', '-', tools.b64(t)) if t else ''
+		ch_name = re.sub(r'\[.*?min ', '-', tools.b64(t)) if t else ''
 		s = ch.findtext('stream_url', default='')
 		url1 = tools.check_protocol(s).replace('<![CDATA[','').replace(']]>','')
 		thumb = ch.findtext('desc_image', default='')
@@ -177,8 +198,8 @@ def Livelist(url):
 			thumb = live
 		d = ch.findtext('description', default='')
 		desc = tools.b64(d) if d else 'No Info Available'
-		if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
-			tools.addDir('%s' % name, url1, 4, thumb, background, desc)
+		if not hidexxx or (hidexxx and not any(tag in ch_name for tag in adult_tags)):
+			tools.addDir(ch_name, url1, 4, thumb, background, desc)
 
 def series_cats(url):
 	raw = tools.OPEN_URL_CACHED(player_api+'&action=get_series_categories', ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
@@ -546,16 +567,24 @@ def _start_playback_watchdog():
 
 def stream_video(url):
 	url = buildcleanurl(url)
+	# Log to history and save as last played
+	tools.add_to_history(url, name or '', iconimage or icon, description or '')
+	tools.save_last_played(url, name or '', iconimage or icon, description or '')
 	xbmc.log(f'{ADDON_ID}: stream_video() resolving URL: {url[:120]}', LOG_NOTICE)
+	# Try to get current programme info for the info overlay
+	now_title, now_desc = '', ''
+	try:
+		# Extract stream_id from URL (last path segment)
+		sid = url.rstrip('/').split('/')[-1].split('.')[0]
+		if sid.isdigit():
+			now_title, now_desc = epg.get_now_playing(player_api, sid)
+	except Exception:
+		pass
 	liz = xbmcgui.ListItem(path=str(url))
-	# ALWAYS use the local addon icon for the playback ListItem.
-	# Remote icon URLs (e.g. from the IPTV provider) can be unreachable and
-	# Kodi's texture-cache / VideoPlayer FileCache will block for up to 30 s
-	# per curl timeout — causing the "freeze on stop" bug.
 	liz.setArt({'icon': icon, 'thumb': icon})
-	liz.setInfo(type='Video', infoLabels={'Title': name, 'Plot': description})
-	# Prevent Kodi from probing the stream to detect content type — the
-	# extra HEAD / partial-GET can hang on stop and delay teardown.
+	display_title = now_title if now_title else (name or '')
+	display_desc = now_desc if now_desc else (description or '')
+	liz.setInfo(type='Video', infoLabels={'Title': display_title, 'Plot': display_desc, 'TVShowTitle': name or ''})
 	liz.setContentLookup(False)
 	xbmcplugin.setResolvedUrl(int(sys.argv[1]), True, liz)
 	xbmc.log(f'{ADDON_ID}: stream_video() resolved OK', LOG_NOTICE)
@@ -570,6 +599,7 @@ def stream_video(url):
 	# repeatedly close dialogs even if the addon process is terminated
 	# by Kodi shortly after resolving the URL.
 	_start_playback_watchdog()
+	epg.start_epg_updater(player_api, url, name or '')
 	player = xbmc.Player()
 	# Wait for playback to actually start (up to 10 s), then exit as soon
 	# as it stops.  This prevents the invoker staying alive for the full
@@ -608,6 +638,7 @@ def settingsmenu():
 		xxx = '[B][COLOR lime]ON[/COLOR][/B]'
 	else:
 		xxx = '[B][COLOR red]OFF[/COLOR][/B]'
+	tools.addDir('Switch Server','url',34,icon,background,'')
 	tools.addDir('Edit Advanced Settings','ADS',10,icon,background,'')
 	tools.addDir('META is %s'%META,'META',10,icon,background,META)
 	tools.addDir('Hide Adult Content is %s'%xxx,'XXX',10,icon,background,xxx)
@@ -829,49 +860,46 @@ def tester():
 
 def pvrsetup():
 	correctPVR()
-	tools.killxbmc()
 	return
 
 def correctPVR():
-	choice = DIALOG.yesno(ADDON_NAME, 'Does your provider allow M3U?')
-	if choice:
-		m3u_do = 'no'
-	else:
-		DP.create(ADDON_NAME, "Please Wait")
-		tools.gen_m3u(panel_api, M3U_PATH)
-		m3u_do = 'yes'
+	DIALOG.ok(ADDON_NAME, 'This will generate a local M3U playlist and configure PVR IPTV Simple Client with your EPG.\n\nThis may take a minute depending on your channel count.')
 	try:
 		addon		  = xbmcaddon.Addon(ADDON_ID)
-		dns_text	  = addon.getSetting(id='DNS')
+		dns_text	  = addon.getSetting(id='DNS').rstrip('/')
 		username_text = addon.getSetting(id='Username')
 		password_text = addon.getSetting(id='Password')
-		PvrEnable	  = '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled","params":{"addonid":"pvr.demo","enabled":false},"id":1}'
-		jsonSetPVR	  = '{"jsonrpc":"2.0", "method":"Settings.SetSettingValue", "params":{"setting":"pvrmanager.enabled", "value":true},"id":1}'
-		IPTVon		  = '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled","params":{"addonid":"pvr.iptvsimple","enabled":true},"id":1}'
-		nulldemo	  = '{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled","params":{"addonid":"pvr.demo","enabled":false},"id":1}'
-		loginurl	  = dns_text+"/get.php?username=" + username_text + "&password=" + password_text + "&type=m3u_plus&output=ts"
-		EPGurl		  = dns_text+"/xmltv.php?username=" + username_text + "&password=" + password_text
+		EPGurl		  = dns_text + "/xmltv.php?username=" + username_text + "&password=" + password_text
 
-		xbmc.executeJSONRPC(PvrEnable)
-		xbmc.executeJSONRPC(jsonSetPVR)
-		xbmc.executeJSONRPC(IPTVon)
-		xbmc.executeJSONRPC(nulldemo)
+		# Generate M3U locally (remote URLs are often 100MB+ and time out)
+		DP.create(ADDON_NAME, "Generating M3U playlist locally...")
+		tools.gen_m3u(panel_api, M3U_PATH)
+		DP.close()
+
+		# Enable PVR manager via JSONRPC
+		xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Settings.SetSettingValue","params":{"setting":"pvrmanager.enabled","value":true},"id":1}')
+		# Enable pvr.iptvsimple, disable pvr.demo
+		xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled","params":{"addonid":"pvr.iptvsimple","enabled":true},"id":1}')
+		xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.SetAddonEnabled","params":{"addonid":"pvr.demo","enabled":false},"id":1}')
 
 		FTG = xbmcaddon.Addon('pvr.iptvsimple')
-		if m3u_do == 'yes':
-			FTG.setSetting(id='m3uPath', value=M3U_PATH)
-			FTG.setSetting(id='m3uPathType', value="0")
-		else:
-			FTG.setSetting(id='m3uUrl', value=loginurl)
+		# Point to local M3U file
+		FTG.setSetting(id='m3uPathType', value='0')
+		FTG.setSetting(id='m3uPath', value=M3U_PATH)
+		# Point to remote EPG (XMLTV is streamed incrementally, so it works fine)
+		FTG.setSetting(id='epgPathType', value='1')
 		FTG.setSetting(id='epgUrl', value=EPGurl)
-		FTG.setSetting(id='m3uCache', value="false")
-		FTG.setSetting(id='epgCache', value="false")
+		FTG.setSetting(id='epgCache', value='true')
+		FTG.setSetting(id='m3uCache', value='true')
+		# Re-read the local M3U file every 2 hours so channel changes are picked up
+		FTG.setSetting(id='m3uRefreshMode', value='1')
+		FTG.setSetting(id='m3uRefreshIntervalMins', value='120')
 
 		xbmc.executebuiltin("Container.Refresh")
-		DIALOG.ok(ADDON_NAME,"PVR Client Updated, Kodi needs to re-launch for changes to take effect, click ok to quit kodi and then please re launch")
+		DIALOG.ok(ADDON_NAME, 'PVR Client configured!\n\nM3U: Local file (%s)\nEPG: %s\n\nKodi will now restart for changes to take effect.' % (M3U_PATH, EPGurl))
 		os._exit(1)
-	except:
-		DIALOG.ok(ADDON_NAME,"PVR Client: Unknown Error or PVR already Set-Up")
+	except Exception as e:
+		DIALOG.ok(ADDON_NAME, 'PVR Setup Error:\n%s\n\nMake sure pvr.iptvsimple is installed first (Extras > Install PVR Guide).' % str(e))
 
 def tvguidesetup():
 		dialog = DIALOG.yesno(ADDON_NAME,'Would You like '+ADDON_NAME+' to Setup the TV Guide for You?')
@@ -898,10 +926,80 @@ def num2day(num):
 	
 def extras():
 	tools.addDir('Run a Speed Test','ST',99,icon,background,'')
-	tools.addDir('[COLOR grey][I]Setup PVR Guide (disabled)[/I][/COLOR]','placeholder',-1,icon,background,'')
-	tools.addDir('[COLOR grey][I]Install PVR Guide (disabled)[/I][/COLOR]','placeholder',-1,icon,background,'')
-	tools.addDir('[COLOR grey][I]Refresh M3U (disabled)[/I][/COLOR]','placeholder',-1,icon,background,'')
+	tools.addDir('[COLOR red][B]Clear Watch History[/B][/COLOR]','clear_history',33,icon,background,'')
+	tools.addDir('[COLOR FF42A5F5]TV Guide[/COLOR]','epg',37,icon,background,'')
 	tools.addDir('Clear Cache','clearcache',10,icon,background,'')
+
+def favorites_list():
+	favs = tools.load_favorites()
+	if not favs:
+		tools.addDir('[COLOR grey]No favorites yet. Long-press on any item to add.[/COLOR]','url',-1,icon,background,'')
+		return
+	for fav in favs:
+		tools.addDir(fav.get('name',''), fav.get('url',''), int(fav.get('mode', 4)), fav.get('iconimage', icon), fav.get('fanart', background), fav.get('description',''))
+
+def toggle_favorite():
+	fav_mode = params.get('fav_mode', '4')
+	if tools.is_favorite(url):
+		tools.remove_favorite(url)
+		tools.LogNotify(ADDON_NAME, 'Removed from Favorites')
+	else:
+		tools.add_favorite(url, name or '', fav_mode, iconimage or icon, background, description or '')
+		tools.LogNotify(ADDON_NAME, 'Added to Favorites')
+	xbmc.executebuiltin('Container.Refresh')
+
+def history_list():
+	history = tools.load_history()
+	if not history:
+		tools.addDir('[COLOR grey]No watch history yet.[/COLOR]','url',-1,icon,background,'')
+		return
+	tools.addDir('[COLOR red][B]Clear History[/B][/COLOR]','url',33,icon,background,'')
+	for item in history:
+		ts = item.get('timestamp', 0)
+		ago = ''
+		if ts:
+			delta = int(time.time() - ts)
+			if delta < 60:
+				ago = 'just now'
+			elif delta < 3600:
+				ago = '%dm ago' % (delta // 60)
+			elif delta < 86400:
+				ago = '%dh ago' % (delta // 3600)
+			else:
+				ago = '%dd ago' % (delta // 86400)
+		channel_name = item.get('name', '')
+		if ago:
+			label = '[COLOR grey]%s[/COLOR]  %s' % (ago, channel_name)
+		else:
+			label = channel_name
+		tools.addDir(label, item.get('url', ''), 35, item.get('iconimage', icon), background, item.get('description', ''))
+
+def manage_profiles():
+	profiles = tools.load_profiles()
+	choices = ['[B][COLOR lime]Save Current Server as Profile[/COLOR][/B]']
+	for p in profiles:
+		choices.append(p.get('name', 'Unnamed'))
+	sel = DIALOG.select('Server Profiles', choices)
+	if sel == -1:
+		return
+	if sel == 0:
+		name_input = control.inputDialog(heading='Profile Name:')
+		if name_input:
+			tools.save_current_as_profile(name_input)
+			tools.LogNotify(ADDON_NAME, 'Profile saved: %s' % name_input)
+	else:
+		idx = sel - 1
+		p = profiles[idx]
+		action = DIALOG.select(p.get('name', ''), ['Switch to this server', 'Delete this profile'])
+		if action == 0:
+			switched = tools.switch_profile(idx)
+			if switched:
+				tools.LogNotify(ADDON_NAME, 'Switched to: %s' % switched)
+				xbmc.executebuiltin('Container.Refresh')
+		elif action == 1:
+			if DIALOG.yesno(ADDON_NAME, 'Delete profile "%s"?' % p.get('name', '')):
+				tools.delete_profile(idx)
+				tools.LogNotify(ADDON_NAME, 'Profile deleted')
 
 params=tools.get_params()
 url=None
@@ -1044,7 +1142,7 @@ elif mode==10:
 	elif url == 'placeholder':
 		xbmcgui.Dialog().ok(ADDON_NAME, 'This feature is currently disabled.')
 	else:
-		pass
+		addonsettings(url,description)
 	
 elif mode==12:
 	catchup()
@@ -1111,11 +1209,57 @@ elif mode==19:
 elif mode==20:
 	season_list(url)
 
+elif mode==30:
+	favorites_list()
 
+elif mode==31:
+	toggle_favorite()
 
+elif mode==32:
+	history_list()
 
+elif mode==33:
+	tools.clear_history()
+	tools.LogNotify(ADDON_NAME, 'History cleared')
+	xbmc.executebuiltin('Container.Refresh')
 
+elif mode==34:
+	manage_profiles()
 
+elif mode==37:
+	# Built-in TV Guide / EPG
+	stream_url, ch_name, ch_icon, now_title, now_desc = epg.open_epg(player_api, play_live, ADDONPATH)
+	if stream_url:
+		tools.add_to_history(stream_url, ch_name or '', ch_icon or icon, '')
+		tools.save_last_played(stream_url, ch_name or '', ch_icon or icon, '')
+		display_title = now_title if now_title else (ch_name or '')
+		liz = xbmcgui.ListItem(path=str(stream_url))
+		liz.setArt({'icon': ch_icon or icon, 'thumb': ch_icon or icon})
+		liz.setInfo(type='Video', infoLabels={'Title': display_title, 'Plot': now_desc, 'TVShowTitle': ch_name or ''})
+		liz.setContentLookup(False)
+		xbmc.Player().play(stream_url, liz)
+		epg.start_epg_updater(player_api, stream_url, ch_name or '')
+
+elif mode==35:
+	# "Last Played" — just play the channel directly (it's live, show info is stale)
+	play_url = buildcleanurl(url)
+	tools.add_to_history(play_url, name or '', iconimage or icon, '')
+	tools.save_last_played(play_url, name or '', iconimage or icon, '')
+	# Fetch current programme info for info overlay
+	now_title, now_desc = '', ''
+	try:
+		sid = play_url.rstrip('/').split('/')[-1].split('.')[0]
+		if sid.isdigit():
+			now_title, now_desc = epg.get_now_playing(player_api, sid)
+	except Exception:
+		pass
+	display_title = now_title if now_title else (name or '')
+	liz = xbmcgui.ListItem(path=str(play_url))
+	liz.setArt({'icon': icon, 'thumb': icon})
+	liz.setInfo(type='Video', infoLabels={'Title': display_title, 'Plot': now_desc, 'TVShowTitle': name or ''})
+	liz.setContentLookup(False)
+	xbmc.Player().play(play_url, liz)
+	epg.start_epg_updater(player_api, play_url, name or '')
 
 
 
@@ -1124,7 +1268,7 @@ elif mode=='start':
 	home()
 
 
-if mode != 4:
+if mode not in (4, 31, 35, 37):
 	try:
 		xbmc.log(f'{ADDON_ID}: calling endOfDirectory for mode={mode}', LOG_NOTICE)
 	except Exception:

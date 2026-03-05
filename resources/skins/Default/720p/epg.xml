@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <defaultcontrol always="true">3000</defaultcontrol>
+    <coordinates>
+        <system>1</system>
+        <posx>0</posx>
+        <posy>0</posy>
+    </coordinates>
+    <controls>
+
+        <!-- ==================== BACKGROUND ==================== -->
+        <!-- Full-screen dark overlay -->
+        <control type="image">
+            <posx>0</posx>
+            <posy>0</posy>
+            <width>1280</width>
+            <height>720</height>
+            <texture>white.png</texture>
+            <colordiffuse>EE000000</colordiffuse>
+        </control>
+
+        <!-- Main container panel -->
+        <control type="image">
+            <posx>20</posx>
+            <posy>12</posy>
+            <width>1240</width>
+            <height>696</height>
+            <texture>white.png</texture>
+            <colordiffuse>F8101828</colordiffuse>
+        </control>
+
+        <!-- ==================== HEADER BAR ==================== -->
+        <control type="image">
+            <posx>20</posx>
+            <posy>12</posy>
+            <width>1240</width>
+            <height>62</height>
+            <texture>white.png</texture>
+            <colordiffuse>FF0D253F</colordiffuse>
+        </control>
+
+        <!-- Accent line under header -->
+        <control type="image">
+            <posx>20</posx>
+            <posy>74</posy>
+            <width>1240</width>
+            <height>2</height>
+            <texture>white.png</texture>
+            <colordiffuse>FF1976D2</colordiffuse>
+        </control>
+
+        <!-- Title: TV GUIDE -->
+        <control type="label" id="4000">
+            <posx>40</posx>
+            <posy>18</posy>
+            <width>200</width>
+            <height>50</height>
+            <font>font14</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <label>[B]TV GUIDE[/B]</label>
+            <align>left</align>
+            <aligny>center</aligny>
+        </control>
+
+        <!-- Category name (center) -->
+        <control type="label" id="4001">
+            <posx>250</posx>
+            <posy>18</posy>
+            <width>780</width>
+            <height>50</height>
+            <font>font13</font>
+            <textcolor>FF90CAF9</textcolor>
+            <label>Loading...</label>
+            <align>center</align>
+            <aligny>center</aligny>
+        </control>
+
+        <!-- Date (right) -->
+        <control type="label" id="4002">
+            <posx>940</posx>
+            <posy>18</posy>
+            <width>300</width>
+            <height>50</height>
+            <font>font12</font>
+            <textcolor>FF888888</textcolor>
+            <label></label>
+            <align>right</align>
+            <aligny>center</aligny>
+        </control>
+
+        <!-- ==================== CHANNEL LIST (LEFT) ==================== -->
+        <!-- Channel panel background -->
+        <control type="image">
+            <posx>20</posx>
+            <posy>76</posy>
+            <width>370</width>
+            <height>524</height>
+            <texture>white.png</texture>
+            <colordiffuse>F0111D2E</colordiffuse>
+        </control>
+
+        <!-- "CHANNELS" sub-header -->
+        <control type="label">
+            <posx>30</posx>
+            <posy>78</posy>
+            <width>350</width>
+            <height>28</height>
+            <font>font10</font>
+            <textcolor>FF5C6BC0</textcolor>
+            <label>CHANNELS</label>
+            <align>left</align>
+            <aligny>center</aligny>
+        </control>
+
+        <!-- Channel list control -->
+        <control type="list" id="3000">
+            <posx>24</posx>
+            <posy>108</posy>
+            <width>362</width>
+            <height>488</height>
+            <orientation>vertical</orientation>
+            <scrolltime tween="sine" easing="out">200</scrolltime>
+            <pagecontrol>-</pagecontrol>
+            <onright>3100</onright>
+            <itemlayout width="362" height="52">
+                <control type="image">
+                    <posx>8</posx>
+                    <posy>6</posy>
+                    <width>40</width>
+                    <height>40</height>
+                    <texture>$INFO[ListItem.Icon]</texture>
+                    <aspectratio>keep</aspectratio>
+                </control>
+                <control type="label">
+                    <posx>56</posx>
+                    <posy>6</posy>
+                    <width>296</width>
+                    <height>40</height>
+                    <font>font12</font>
+                    <textcolor>FFAAAAAA</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                    <aligny>center</aligny>
+                </control>
+            </itemlayout>
+            <focusedlayout width="362" height="52">
+                <!-- Focus background -->
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>362</width>
+                    <height>52</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>FF1565C0</colordiffuse>
+                </control>
+                <!-- Blue accent bar -->
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>4</width>
+                    <height>52</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>FF42A5F5</colordiffuse>
+                </control>
+                <control type="image">
+                    <posx>8</posx>
+                    <posy>6</posy>
+                    <width>40</width>
+                    <height>40</height>
+                    <texture>$INFO[ListItem.Icon]</texture>
+                    <aspectratio>keep</aspectratio>
+                </control>
+                <control type="label">
+                    <posx>56</posx>
+                    <posy>6</posy>
+                    <width>296</width>
+                    <height>40</height>
+                    <font>font13</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                    <aligny>center</aligny>
+                </control>
+            </focusedlayout>
+        </control>
+
+        <!-- ==================== VERTICAL SEPARATOR ==================== -->
+        <control type="image">
+            <posx>390</posx>
+            <posy>80</posy>
+            <width>2</width>
+            <height>516</height>
+            <texture>white.png</texture>
+            <colordiffuse>FF1A2744</colordiffuse>
+        </control>
+
+        <!-- ==================== PROGRAMME LIST (RIGHT) ==================== -->
+        <!-- Programme panel background -->
+        <control type="image">
+            <posx>392</posx>
+            <posy>76</posy>
+            <width>868</width>
+            <height>524</height>
+            <texture>white.png</texture>
+            <colordiffuse>F00B1120</colordiffuse>
+        </control>
+
+        <!-- "SCHEDULE" sub-header -->
+        <control type="label">
+            <posx>402</posx>
+            <posy>78</posy>
+            <width>848</width>
+            <height>28</height>
+            <font>font10</font>
+            <textcolor>FF5C6BC0</textcolor>
+            <label>SCHEDULE</label>
+            <align>left</align>
+            <aligny>center</aligny>
+        </control>
+
+        <!-- Programme list control -->
+        <control type="list" id="3100">
+            <posx>396</posx>
+            <posy>108</posy>
+            <width>858</width>
+            <height>488</height>
+            <orientation>vertical</orientation>
+            <scrolltime tween="sine" easing="out">200</scrolltime>
+            <pagecontrol>-</pagecontrol>
+            <onleft>3000</onleft>
+            <itemlayout width="858" height="46">
+                <!-- Time -->
+                <control type="label">
+                    <posx>10</posx>
+                    <posy>4</posy>
+                    <width>140</width>
+                    <height>38</height>
+                    <font>font12</font>
+                    <textcolor>FF5C9CE6</textcolor>
+                    <label>$INFO[ListItem.Label2]</label>
+                    <aligny>center</aligny>
+                </control>
+                <!-- Title -->
+                <control type="label">
+                    <posx>155</posx>
+                    <posy>4</posy>
+                    <width>693</width>
+                    <height>38</height>
+                    <font>font12</font>
+                    <textcolor>FFCCCCCC</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                    <aligny>center</aligny>
+                </control>
+            </itemlayout>
+            <focusedlayout width="858" height="46">
+                <!-- Focus background -->
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>858</width>
+                    <height>46</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>FF1565C0</colordiffuse>
+                </control>
+                <!-- Accent bar -->
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>4</width>
+                    <height>46</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>FF42A5F5</colordiffuse>
+                </control>
+                <!-- Time (focused) -->
+                <control type="label">
+                    <posx>10</posx>
+                    <posy>4</posy>
+                    <width>140</width>
+                    <height>38</height>
+                    <font>font12</font>
+                    <textcolor>FF90CAF9</textcolor>
+                    <label>$INFO[ListItem.Label2]</label>
+                    <aligny>center</aligny>
+                </control>
+                <!-- Title (focused) -->
+                <control type="label">
+                    <posx>155</posx>
+                    <posy>4</posy>
+                    <width>693</width>
+                    <height>38</height>
+                    <font>font13</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                    <aligny>center</aligny>
+                </control>
+            </focusedlayout>
+        </control>
+
+        <!-- ==================== INFO PANEL (BOTTOM) ==================== -->
+        <!-- Separator line -->
+        <control type="image">
+            <posx>20</posx>
+            <posy>600</posy>
+            <width>1240</width>
+            <height>2</height>
+            <texture>white.png</texture>
+            <colordiffuse>FF1976D2</colordiffuse>
+        </control>
+
+        <!-- Info panel background -->
+        <control type="image">
+            <posx>20</posx>
+            <posy>602</posy>
+            <width>1240</width>
+            <height>106</height>
+            <texture>white.png</texture>
+            <colordiffuse>F8080E18</colordiffuse>
+        </control>
+
+        <!-- Programme info title -->
+        <control type="label" id="4100">
+            <posx>40</posx>
+            <posy>606</posy>
+            <width>1100</width>
+            <height>28</height>
+            <font>font13</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <label>Select a channel to view its schedule</label>
+        </control>
+
+        <!-- Programme description -->
+        <control type="textbox" id="4101">
+            <posx>40</posx>
+            <posy>636</posy>
+            <width>1060</width>
+            <height>48</height>
+            <font>font10</font>
+            <textcolor>FF999999</textcolor>
+        </control>
+
+        <!-- Navigation hints -->
+        <control type="label" id="4103">
+            <posx>740</posx>
+            <posy>683</posy>
+            <width>500</width>
+            <height>22</height>
+            <font>font10</font>
+            <textcolor>FF555555</textcolor>
+            <label>[OK] Watch  |  [Back] Categories  |  [Esc] Close</label>
+            <align>right</align>
+            <aligny>center</aligny>
+        </control>
+
+    </controls>
+</window>

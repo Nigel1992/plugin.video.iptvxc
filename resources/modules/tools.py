@@ -226,7 +226,58 @@ def regex_get_all(text, start_with, end_with):
 def regex_get_us(text, start_with, end_with):
 	r = re.findall("(?i)(" + start_with + ".+?[UK: Sky Sports].+?" + end_with + ")", text)
 	return r
-	
+
+# --------------- stream quality tags ---------------
+
+_RES_PATTERNS = [
+    (re.compile(r'\b4K\b|\bUHD\b|\b2160[pP]\b', re.I), '4K',    'FF9C27B0'),
+    (re.compile(r'\b1440[pP]\b|\bQHD\b',         re.I), '1440p', 'FF2196F3'),
+    (re.compile(r'\bFHD\b|\b1080[pP]\b',          re.I), '1080p', 'FF4CAF50'),
+    (re.compile(r'\bHD\b|\b720[pP]\b',            re.I), '720p',  'FFFFAB40'),
+    (re.compile(r'\bSD\b|\b480[pP]\b|\b576[pP]\b', re.I), 'SD',  'FFFF5252'),
+]
+
+_FPS_PATTERN = re.compile(r'\b(\d{2,3})\s*(?:fps|FPS)\b')
+
+def quality_tag_from_name(name):
+    """Return a coloured resolution+fps tag string parsed from a channel/title name, or ''."""
+    if not name:
+        return ''
+    tag = ''
+    for pat, label, colour in _RES_PATTERNS:
+        if pat.search(name):
+            tag = '[COLOR %s][B]%s[/B][/COLOR]' % (colour, label)
+            break
+    fps_m = _FPS_PATTERN.search(name)
+    if fps_m:
+        fps = fps_m.group(1)
+        tag += ' [COLOR FF888888]%sfps[/COLOR]' % fps
+    return tag.strip()
+
+def quality_tag_from_resolution(width, height, fps=None):
+    """Return a coloured tag from numeric width/height (e.g. from VOD info)."""
+    h = int(height) if height else 0
+    if h >= 2160:
+        label, colour = '4K', 'FF9C27B0'
+    elif h >= 1440:
+        label, colour = '1440p', 'FF2196F3'
+    elif h >= 1080:
+        label, colour = '1080p', 'FF4CAF50'
+    elif h >= 720:
+        label, colour = '720p', 'FFFFAB40'
+    elif h > 0:
+        label, colour = 'SD', 'FFFF5252'
+    else:
+        return ''
+    tag = '[COLOR %s][B]%s[/B][/COLOR]' % (colour, label)
+    if fps:
+        try:
+            fps_val = str(int(float(str(fps))))
+            tag += ' [COLOR FF888888]%sfps[/COLOR]' % fps_val
+        except (ValueError, TypeError):
+            pass
+    return tag
+
 def addDir(name,url,mode,iconimage,fanart,description):
 	# Use the local addon icon in the plugin URL parameter to prevent Kodi's
 	# internal CCurlFile from fetching a remote icon URL on stop/resume,
@@ -238,11 +289,20 @@ def addDir(name,url,mode,iconimage,fanart,description):
 	except Exception:
 		pass
 	ok=True
+	# Append resolution/quality tag to the display name
+	display_name = name
+	try:
+		if GET_SET.getSetting('show_stream_tags') == 'true':
+			qt = quality_tag_from_name(name)
+			if qt:
+				display_name = '%s  %s' % (name, qt)
+	except Exception:
+		pass
 	# Use safe_icon to avoid Kodi blocking on unreachable icon servers
 	safe_img = safe_icon(iconimage)
-	liz=xbmcgui.ListItem(name)
+	liz=xbmcgui.ListItem(display_name)
 	liz.setArt({'icon':safe_img, 'thumb':safe_img})
-	liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description,})
+	liz.setInfo( type="Video", infoLabels={"Title": display_name,"Plot":description,})
 	liz.setProperty('fanart_image', fanart)
 	# Favorites context menu
 	cm = []
@@ -262,10 +322,10 @@ def addDir(name,url,mode,iconimage,fanart,description):
 		liz.setProperty("IsPlayable","true")
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
 	elif mode==7 or mode==10 or mode==17 or mode==21:
-		liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description})
+		liz.setInfo( type="Video", infoLabels={"Title": display_name,"Plot":description})
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
 	else:
-		liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description})
+		liz.setInfo( type="Video", infoLabels={"Title": display_name,"Plot":description})
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True)
 	return ok
 	xbmcplugin.endOfDirectory
@@ -281,14 +341,23 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 			xbmc.log('[IPTVXC] Extracted TMDB ID: %s from description' % tmdb_id, xbmc.LOGDEBUG)
 		else:
 			xbmc.log('[IPTVXC] No TMDB ID found in description (first 200 chars): %s' % description[:200], xbmc.LOGDEBUG)
+	# Append resolution/quality tag to the display name
+	display_name = name
+	try:
+		if GET_SET.getSetting('show_stream_tags') == 'true':
+			qt = quality_tag_from_name(name)
+			if qt:
+				display_name = '%s  %s' % (name, qt)
+	except Exception:
+		pass
 	
 	u=sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(ICON))+"&description="+urllib.parse.quote_plus(str(description))+"&year="+urllib.parse.quote_plus(str(year))+"&tmdb_id="+urllib.parse.quote_plus(str(tmdb_id))
 	ok=True
 	# Use safe_icon to avoid Kodi blocking on unreachable icon servers
 	safe_img = safe_icon(iconimage)
-	liz=xbmcgui.ListItem(name)
+	liz=xbmcgui.ListItem(display_name)
 	liz.setArt({'icon':safe_img, 'thumb':safe_img})
-	liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description,"Rating":rating,"Year":year,"Duration":runtime,"Cast":cast,"Genre":genre})
+	liz.setInfo( type="Video", infoLabels={"Title": display_name,"Plot":description,"Rating":rating,"Year":year,"Duration":runtime,"Cast":cast,"Genre":genre})
 	liz.setProperty('fanart_image', fanart)
 	liz.setProperty("IsPlayable","true")
 	cm = []

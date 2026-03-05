@@ -1,9 +1,8 @@
+
 # Version 3.8.2 (2026-03-05)
 
-### ✨ New Features
-- **Resolution & quality tags** — channels, movies, and series now show coloured resolution badges (SD, 720p, 1080p, 1440p, 4K) and frame rate when detected from names
-- Toggle on/off in Settings → Features → "Show resolution/quality tags"
-- Tags appear in all listings: Live TV, VOD, Series, EPG TV Guide, and search results
+### 🔄 Maintenance
+- Version bump to 3.8.2 for latest release
 
 # Version 3.8.1 (2026-03-05)
 

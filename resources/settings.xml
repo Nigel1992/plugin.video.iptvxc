@@ -23,6 +23,5 @@
 	</category>
 	<category label="Features">
 		<setting id="max_history_items" type="number" label="Max items in watch history" default="25" />
-		<setting id="show_stream_tags" type="bool" label="Show resolution/quality tags on channels &amp; VOD" default="true" />
 	</category>
 </settings>

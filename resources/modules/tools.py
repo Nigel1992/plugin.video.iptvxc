@@ -53,8 +53,6 @@ from urllib.parse import urlparse
 	#Addon Specific
 from urllib.request import Request, urlopen
 from resources.modules import control
-import threading
-from resources.modules.ffprobe_helper import probe_stream
 
 ##########################=VARIABLES=#######################################
 
@@ -163,7 +161,7 @@ def safe_icon(iconimage, fallback=None):
 
 	For local paths, data URIs, or empty strings the value is returned as-is.
 	The very first call for a given hostname does a fast TCP probe (2 s max).
-	 """
+	"""
 	if fallback is None:
 		fallback = ICON
 	if not iconimage:
@@ -228,73 +226,7 @@ def regex_get_all(text, start_with, end_with):
 def regex_get_us(text, start_with, end_with):
 	r = re.findall("(?i)(" + start_with + ".+?[UK: Sky Sports].+?" + end_with + ")", text)
 	return r
-
-# --------------- stream quality tags ---------------
-
-_RES_PATTERNS = [
-    (re.compile(r'\b4K\b|\bUHD\b|\b2160[pP]\b', re.I), '4K',    'FF9C27B0'),
-    (re.compile(r'\b1440[pP]\b|\bQHD\b',         re.I), '1440p', 'FF2196F3'),
-    (re.compile(r'\bFHD\b|\b1080[pP]\b',          re.I), '1080p', 'FF4CAF50'),
-    (re.compile(r'\bHD\b|\b720[pP]\b',            re.I), '720p',  'FFFFAB40'),
-    (re.compile(r'\bSD\b|\b480[pP]\b|\b576[pP]\b', re.I), 'SD',  'FFFF5252'),
-]
-
-_FPS_PATTERN = re.compile(r'\b(\d{2,3})\s*(?:fps|FPS)\b')
-
-def quality_tag_from_name(name):
-    """Return a coloured resolution+fps tag string parsed from a channel/title name, or ''."""
-    if not name:
-        return ''
-    tag = ''
-    for pat, label, colour in _RES_PATTERNS:
-        if pat.search(name):
-            tag = '[COLOR %s][B]%s[/B][/COLOR]' % (colour, label)
-            break
-    fps_m = _FPS_PATTERN.search(name)
-    if fps_m:
-        fps = fps_m.group(1)
-        tag += ' [COLOR FF888888]%sfps[/COLOR]' % fps
-    return tag.strip()
-
-def quality_tag_from_resolution(width, height, fps=None):
-	"""Return plain text tag from numeric width/height/fps."""
-	h = int(height) if height else 0
-	if h >= 2160:
-		label = '4K'
-	elif h >= 1440:
-		label = '1440p'
-	elif h >= 1080:
-		label = '1080p'
-	elif h >= 720:
-		label = '720p'
-	elif h > 0:
-		label = 'SD'
-	else:
-		return ''
-	tag = label
-	if fps:
-		try:
-			fps_val = int(round(float(str(fps))))
-			tag += f' {fps_val} FPS'
-		except (ValueError, TypeError):
-			pass
-	return tag
-
-def _update_listitem_resolution(liz, url, name):
-	try:
-		result = probe_stream(url)
-		if result:
-			tag = quality_tag_from_resolution(result.get('width'), result.get('height'), result.get('fps'))
-			if tag:
-				display_name = f'{name} - {tag}'
-				liz.setLabel(display_name)
-				liz.setInfo('Video', {'Title': display_name})
-				xbmc.log(f'IPTVXC: ffprobe tag for {name}: {tag}', 1)
-		else:
-			xbmc.log(f'IPTVXC: ffprobe failed for {name}', 1)
-	except Exception as e:
-		xbmc.log(f'IPTVXC: ffprobe error for {name}: {e}', 1)
-
+	
 def addDir(name,url,mode,iconimage,fanart,description):
 	# Use the local addon icon in the plugin URL parameter to prevent Kodi's
 	# internal CCurlFile from fetching a remote icon URL on stop/resume,
@@ -306,36 +238,17 @@ def addDir(name,url,mode,iconimage,fanart,description):
 	except Exception:
 		pass
 	ok=True
-	cm = []
-	# Append resolution/quality tag to the display name
-	display_name = name
 	# Use safe_icon to avoid Kodi blocking on unreachable icon servers
 	safe_img = safe_icon(iconimage)
-	liz = xbmcgui.ListItem(display_name)
-	liz.setArt({'icon': safe_img, 'thumb': safe_img})
-	liz.setInfo(type="Video", infoLabels={"Title": display_name, "Plot": description})
+	liz=xbmcgui.ListItem(name)
+	liz.setArt({'icon':safe_img, 'thumb':safe_img})
+	liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description,})
 	liz.setProperty('fanart_image', fanart)
+	# Favorites context menu
+	cm = []
+	_fav_modes = (2, 3, 4, 12, 13, 18, 19, 20, 25)
 	try:
-		if GET_SET.getSetting('show_stream_tags') == 'true':
-			result = probe_stream(url)
-			if result:
-				tag = quality_tag_from_resolution(result.get('width'), result.get('height'), result.get('fps'))
-				try:
-					if GET_SET.getSetting('show_stream_tags') == 'true':
-						result = probe_stream(url)
-						if result:
-							tag = quality_tag_from_resolution(result.get('width'), result.get('height'), result.get('fps'))
-							if tag:
-								display_name = f'{name} - {tag}'
-								liz.setLabel(display_name)
-								liz.setInfo('Video', {'Title': display_name})
-						else:
-							display_name = f'{name} - [Loading...]'
-							liz.setLabel(display_name)
-							liz.setInfo('Video', {'Title': display_name})
-							threading.Thread(target=_update_listitem_resolution, args=(liz, url, name), daemon=True).start()
-				except Exception:
-					pass
+		if int(mode) in _fav_modes:
 			fav_url = sys.argv[0] + "?mode=31&url=" + urllib.parse.quote_plus(str(url)) + "&name=" + urllib.parse.quote_plus(str(name)) + "&iconimage=" + urllib.parse.quote_plus(str(iconimage)) + "&description=" + urllib.parse.quote_plus(str(description)) + "&fav_mode=" + str(mode)
 			if is_favorite(url):
 				cm.append(('[COLOR red]Remove from Favorites[/COLOR]', 'RunPlugin(' + fav_url + ')'))
@@ -349,10 +262,10 @@ def addDir(name,url,mode,iconimage,fanart,description):
 		liz.setProperty("IsPlayable","true")
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
 	elif mode==7 or mode==10 or mode==17 or mode==21:
-		liz.setInfo( type="Video", infoLabels={"Title": display_name,"Plot":description})
+		liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description})
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
 	else:
-		liz.setInfo( type="Video", infoLabels={"Title": display_name,"Plot":description})
+		liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description})
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True)
 	return ok
 	xbmcplugin.endOfDirectory
@@ -368,37 +281,21 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 			xbmc.log('[IPTVXC] Extracted TMDB ID: %s from description' % tmdb_id, xbmc.LOGDEBUG)
 		else:
 			xbmc.log('[IPTVXC] No TMDB ID found in description (first 200 chars): %s' % description[:200], xbmc.LOGDEBUG)
-	# Append resolution/quality tag to the display name
-	display_name = name
-	u = sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(ICON))+"&description="+urllib.parse.quote_plus(str(description))+"&year="+urllib.parse.quote_plus(str(year))+"&tmdb_id="+urllib.parse.quote_plus(str(tmdb_id))
+	
+	u=sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(ICON))+"&description="+urllib.parse.quote_plus(str(description))+"&year="+urllib.parse.quote_plus(str(year))+"&tmdb_id="+urllib.parse.quote_plus(str(tmdb_id))
+	ok=True
 	# Use safe_icon to avoid Kodi blocking on unreachable icon servers
 	safe_img = safe_icon(iconimage)
-	liz = xbmcgui.ListItem(display_name)
-	liz.setArt({'icon': safe_img, 'thumb': safe_img})
-	liz.setInfo(type="Video", infoLabels={"Title": display_name, "Plot": description, "Rating": rating, "Year": year, "Duration": runtime, "Cast": cast, "Genre": genre})
+	liz=xbmcgui.ListItem(name)
+	liz.setArt({'icon':safe_img, 'thumb':safe_img})
+	liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description,"Rating":rating,"Year":year,"Duration":runtime,"Cast":cast,"Genre":genre})
 	liz.setProperty('fanart_image', fanart)
-	liz.setProperty("IsPlayable", "true")
+	liz.setProperty("IsPlayable","true")
+	cm = []
+	cm.append(('Movie Information', 'XBMC.Action(Info)'))
+	
+	# Add Trakt context menu items if enabled
 	try:
-		if GET_SET.getSetting('show_stream_tags') == 'true':
-			result = probe_stream(url)
-			if result:
-				tag = quality_tag_from_resolution(result.get('width'), result.get('height'), result.get('fps'))
-				try:
-					if GET_SET.getSetting('show_stream_tags') == 'true':
-						result = probe_stream(url)
-						if result:
-							tag = quality_tag_from_resolution(result.get('width'), result.get('height'), result.get('fps'))
-							if tag:
-								display_name = f'{name} - {tag}'
-								liz.setLabel(display_name)
-								liz.setInfo('Video', {'Title': display_name})
-						else:
-							display_name = f'{name} - [Loading...]'
-							liz.setLabel(display_name)
-							liz.setInfo('Video', {'Title': display_name})
-							threading.Thread(target=_update_listitem_resolution, args=(liz, url, name), daemon=True).start()
-				except Exception:
-					pass
 		if GET_SET.getSetting('trakt_enabled') == 'true':
 			# Add to Trakt Watchlist
 			trakt_watchlist_url = sys.argv[0]+"?url=TRAKT_WATCHLIST&mode=23&name="+urllib.parse.quote_plus(str(name))+"&year="+str(year)
@@ -477,7 +374,7 @@ def OPEN_URL_CACHED(url, ttl_minutes=30):
 
 	Returns cached content if the file exists and is younger than ttl_minutes.
 	Otherwise fetches from network, stores to cache, and returns the result.
-	 """
+	"""
 	_ensure_cache_dir()
 	key = _cache_key(url)
 	cache_file = os.path.join(CACHE_DIR, key + '.dat')

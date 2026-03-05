@@ -47,10 +47,6 @@ class EPGWindow(xbmcgui.WindowXMLDialog):
         self.selected_now_desc  = ''
         self._last_ch_pos   = -1
         self._nav_item_count = 1  # number of nav items at top of channel list
-        try:
-            self._show_tags = ADDON.getSetting('show_stream_tags') == 'true'
-        except Exception:
-            self._show_tags = False
 
     # ----- lifecycle -----
 
@@ -133,12 +129,7 @@ class EPGWindow(xbmcgui.WindowXMLDialog):
 
         for ch in self.channels:
             name = ch.get('name', 'Unknown')
-            display = name
-            if self._show_tags:
-                qt = tools.quality_tag_from_name(name)
-                if qt:
-                    display = '%s  %s' % (name, qt)
-            li = xbmcgui.ListItem(display)
+            li = xbmcgui.ListItem(name)
             icon_url = ch.get('stream_icon', '')
             if icon_url:
                 li.setArt({'icon': icon_url, 'thumb': icon_url})
@@ -436,13 +427,7 @@ class EPGWindow(xbmcgui.WindowXMLDialog):
         ch_list.addItem(xbmcgui.ListItem(
             '[COLOR FFFFAB40][B]\U0001F50D  Search Again[/B][/COLOR]'))
         for ch in matches:
-            name = ch.get('name', 'Unknown')
-            display = name
-            if self._show_tags:
-                qt = tools.quality_tag_from_name(name)
-                if qt:
-                    display = '%s  %s' % (name, qt)
-            li = xbmcgui.ListItem(display)
+            li = xbmcgui.ListItem(ch.get('name', 'Unknown'))
             icon_url = ch.get('stream_icon', '')
             if icon_url:
                 li.setArt({'icon': icon_url, 'thumb': icon_url})

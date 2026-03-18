@@ -780,26 +780,50 @@ def advancedsettings(device):
 
 def accountinfo():
 	response = tools.OPEN_URL(panel_api)
-	parse = json.loads(response)
-	expiry	   = parse['user_info']['exp_date']
-	if not expiry=="":
-		expiry	   = datetime.datetime.fromtimestamp(int(expiry)).strftime('%d/%m/%Y - %H:%M')
-		expreg	   = re.compile('^(.*?)/(.*?)/(.*?)$',re.DOTALL).findall(expiry)
-		for day,month,year in expreg:
-			month	  = tools.MonthNumToName(month)
-			year	  = re.sub(' -.*?$','',year)
-			expiry	  = month+' '+day+' - '+year
-	else:
-		expiry = 'Unlimited'
-	tools.addDir('[B][COLOR white]Username :[/COLOR][/B] '+parse['user_info']['username'],'','',icon,background,'')
-	tools.addDir('[B][COLOR white]Password :[/COLOR][/B] '+parse['user_info']['password'],'','',icon,background,'')
-	tools.addDir('[B][COLOR white]Expiry Date:[/COLOR][/B] '+expiry,'','',icon,background,'')
-	tools.addDir('[B][COLOR white]Account Status :[/COLOR][/B] %s'% parse['user_info']['status'],'','',icon,background,'')
-	tools.addDir('[B][COLOR white]Current Connections:[/COLOR][/B] '+ parse['user_info']['active_cons'],'','',icon,background,'')
-	tools.addDir('[B][COLOR white]Allowed Connections:[/COLOR][/B] '+ parse['user_info']['max_connections'],'','',icon,background,'')
-	tools.addDir('[B][COLOR white]Local IP Address:[/COLOR][/B] '+ tools.getlocalip(),'','',icon,background,'')
-	tools.addDir('[B][COLOR white]External IP Address:[/COLOR][/B] '+ tools.getexternalip(),'','',icon,background,'')
-	tools.addDir('[B][COLOR white]Kodi Version:[/COLOR][/B] '+str(KODIV),'','',icon,background,'')
+	if not response:
+		tools.addDir('[B][COLOR white]Account Information:[/COLOR][/B] Unable to fetch account details (no response)', '', '', icon, background, '')
+		return
+	try:
+		parse = json.loads(response)
+	except Exception as e:
+		try:
+			xbmc.log(f'{ADDON_ID}: accountinfo() JSON parse error: {e}', LOG_NOTICE)
+		except Exception:
+			pass
+		tools.addDir('[B][COLOR white]Account Information:[/COLOR][/B] Unable to parse server response', '', '', icon, background, '')
+		return
+	user_info = parse.get('user_info', {}) or {}
+	expiry_raw = user_info.get('exp_date', '')
+	expiry = 'Unlimited'
+	if expiry_raw not in (None, '', '0'):
+		try:
+			expiry_ts = int(expiry_raw)
+			expiry = datetime.datetime.fromtimestamp(expiry_ts).strftime('%d/%m/%Y - %H:%M')
+			expreg = re.compile('^(.*?)/(.*?)/(.*?)$', re.DOTALL).findall(expiry)
+			if expreg:
+				day, month, year = expreg[0]
+				month = tools.MonthNumToName(month)
+				year = re.sub(' -.*?$', '', year)
+				expiry = month + ' ' + day + ' - ' + year
+		except Exception:
+			expiry = 'Unlimited'
+	username = str(user_info.get('username', ''))
+	password = str(user_info.get('password', ''))
+	status = str(user_info.get('status', ''))
+	active_cons = str(user_info.get('active_cons', ''))
+	max_connections = str(user_info.get('max_connections', ''))
+	local_ip = str(tools.getlocalip() or '')
+	external_ip = str(tools.getexternalip() or '')
+
+	tools.addDir('[B][COLOR white]Username :[/COLOR][/B] ' + username, '', '', icon, background, '')
+	tools.addDir('[B][COLOR white]Password :[/COLOR][/B] ' + password, '', '', icon, background, '')
+	tools.addDir('[B][COLOR white]Expiry Date:[/COLOR][/B] ' + expiry, '', '', icon, background, '')
+	tools.addDir('[B][COLOR white]Account Status :[/COLOR][/B] %s' % status, '', '', icon, background, '')
+	tools.addDir('[B][COLOR white]Current Connections:[/COLOR][/B] ' + active_cons, '', '', icon, background, '')
+	tools.addDir('[B][COLOR white]Allowed Connections:[/COLOR][/B] ' + max_connections, '', '', icon, background, '')
+	tools.addDir('[B][COLOR white]Local IP Address:[/COLOR][/B] ' + local_ip, '', '', icon, background, '')
+	tools.addDir('[B][COLOR white]External IP Address:[/COLOR][/B] ' + external_ip, '', '', icon, background, '')
+	tools.addDir('[B][COLOR white]Kodi Version:[/COLOR][/B] ' + str(KODIV), '', '', icon, background, '')
 
 def waitasec(time_to_wait,title,text):
 	FTGcd = xbmcgui.DialogProgress()

@@ -1,4 +1,10 @@
 
+# Version 3.8.3 (2026-03-18)
+
+### 🐛 Bug Fixes
+- Fixed accountinfo crash when the panel API returns empty or invalid JSON. Added robust parsing, defensive checks, and string coercion for numeric fields to prevent TypeError exceptions.
+- Packaging: ensure release ZIP contains a top-level `plugin.video.iptvxc` folder and excludes any local `.venv` directory.
+
 # Version 3.8.2 (2026-03-05)
 
 ### 🔄 Maintenance

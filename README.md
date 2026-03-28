@@ -12,7 +12,7 @@ Live TV • VOD • Catch-up • TV Series
 Optimized for **Kodi v21 (Omega)** & **Python 3.13**
 
 [![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
-[![Version](https://img.shields.io/badge/Version-3.6.0-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.6.0)
+[![Version](https://img.shields.io/badge/Version-3.8.4-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.4)
 [![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=flat-square)](https://kodi.tv)
 [![Python](https://img.shields.io/badge/Python-3.13-yellow?style=flat-square)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
@@ -71,7 +71,7 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 3) Enter provider credentials in Settings → Accounts  
 4) Browse Live / VOD / Series / Catch-up
 
-## 📋 What you’ll need
+##  What you’ll need
 
 - Kodi 21 (Omega) or newer
 - XC/XCUI-compatible account (host, username, password)
@@ -148,7 +148,16 @@ For a complete list of changes and release history, see [CHANGELOG.md](CHANGELOG
 
 ---
 
-## 🚀 What's New (v3.8.x)
+## Version 3.8.4 (2026-03-28)
+- Mapped menu `icon_*.png` files in `resources/media/` to home menu items (Favorites, Recently Watched, Account Info, Live TV, Movies VOD, Series, TV Guide, Catchup, Search, Settings, Extras).
+- Added `icon_LAST_PLAYED.png` and set it as the Last Played home icon (local fallback to avoid blocked remote hosts).
+- Set Extras to use `icon_EXTRAS.png` as a local fallback.
+- Fixed `IndentationError` in `default.py` (normalized ART PATHS and removed an unreachable nested try/except in `livecategory()`).
+- Packaged and published release `v3.8.4` with a clean ZIP; updated docs and release notes.
+
+---
+
+## Version 3.6.0 (2026-03-03)
 
 - **Custom EPG / TV Guide** — full in-addon EPG window with two-panel layout (channels + programme schedule), category browsing, search for categories and channels, progress bars on currently airing shows, and info panel
 - **EPG remembers last category** — reopening the TV Guide auto-loads the previously viewed category

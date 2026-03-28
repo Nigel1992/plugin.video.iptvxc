@@ -82,23 +82,29 @@ advanced_settings = os.path.join(PLUGIN,'resources', 'advanced_settings')
 MEDIA			  = os.path.join(ADDONS,  PLUGIN , 'resources', 'media')
 KODIV			  = float(xbmc.getInfoLabel("System.BuildVersion")[:4])
 M3U_PATH		  = os.path.join(ADDONDATA,  'm3u.m3u')
+
 ##########################=ART PATHS=#######################################
-icon			  = os.path.join(PLUGIN,  'icon.png')
-fanart			  = os.path.join(PLUGIN,  'fanart.jpg')
-background		  = os.path.join(MEDIA,	 'background.jpg')
-live			  = os.path.join(MEDIA,	 'live.jpg')
-catch			  = os.path.join(MEDIA,	 'cu.jpg')
-Moviesod		  = os.path.join(MEDIA,	 'movie.jpg')
-Tvseries		  = os.path.join(MEDIA,	 'tv.jpg')
-iconextras		  = os.path.join(MEDIA,	 'iconextras.png')
-iconsettings	  = os.path.join(MEDIA,	 'iconsettings.png')
-iconlive		  = os.path.join(MEDIA,	 'iconlive.png')
-iconcatchup		  = os.path.join(MEDIA,	 'iconcatchup.png')
-iconMoviesod	  = os.path.join(MEDIA,	 'iconmovies.png')
-iconTvseries	  = os.path.join(MEDIA,	 'icontvseries.png')
-iconsearch		  = os.path.join(MEDIA,	 'iconsearch.png')
-iconaccount		  = os.path.join(MEDIA,	 'iconaccount.png')
-icontvguide		  = os.path.join(MEDIA,	 'iconguide.png')
+icon = os.path.join(PLUGIN, 'icon.png')
+# fallback for Extras if no specific icon is provided
+iconextras = os.path.join(MEDIA, 'icon_EXTRAS.png')
+fanart = os.path.join(PLUGIN, 'fanart.jpg')
+background = os.path.join(MEDIA, 'background.jpg')
+live = os.path.join(MEDIA, 'live.jpg')
+catch = os.path.join(MEDIA, 'cu.jpg')
+Moviesod = os.path.join(MEDIA, 'movie.jpg')
+Tvseries = os.path.join(MEDIA, 'tv.jpg')
+# new menu icons placed in resources/media (files starting with icon_)
+iconfavorites = os.path.join(MEDIA, 'icon_FAVORITES.png')
+iconrecent = os.path.join(MEDIA, 'icon_RECENTLY_WATCHED.png')
+icon_lastplayed = os.path.join(MEDIA, 'icon_LAST_PLAYED.png')
+iconaccount = os.path.join(MEDIA, 'icon_ACCOUNT_INFO.png')
+iconlive = os.path.join(MEDIA, 'icon_LIVE_TV.png')
+iconMoviesod = os.path.join(MEDIA, 'icon_MOVIES_VOD.png')
+iconTvseries = os.path.join(MEDIA, 'icon_SERIES.png')
+icontvguide = os.path.join(MEDIA, 'icon_TV_GUIDE.png')
+iconcatchup = os.path.join(MEDIA, 'icon_CATCHUP_TV.png')
+iconsearch = os.path.join(MEDIA, 'icon_SEARCH.png')
+iconsettings = os.path.join(MEDIA, 'icon_SETTINGS.png')
 
 #########################=XC VARIABLES=#####################################
 dns				  = control.setting('DNS')
@@ -136,13 +142,14 @@ def home():
 				ago = '%dh ago' % (delta // 3600)
 			else:
 				ago = '%dd ago' % (delta // 86400)
-		channel_name = last.get('name', 'Last Channel')
-		label = '[B][COLOR lime]\u25b6 Last Played: %s[/COLOR][/B]' % channel_name
-		if ago:
-			label = '[B][COLOR lime]\u25b6 Last Played (%s): %s[/COLOR][/B]' % (ago, channel_name)
-		tools.addDir(label, last['url'], 35, last.get('iconimage', icon), background, '')
-	tools.addDir('Favorites','url',30,icon,background,'')
-	tools.addDir('Recently Watched','url',32,icon,background,'')
+			channel_name = last.get('name', 'Last Channel')
+			label = '[B][COLOR lime]\u25b6 Last Played: %s[/COLOR][/B]' % channel_name
+			if ago:
+				label = '[B][COLOR lime]\u25b6 Last Played (%s): %s[/COLOR][/B]' % (ago, channel_name)
+			# Always use the provided local icon for Last Played so it displays
+			tools.addDir(label, last['url'], 35, icon_lastplayed, background, '')
+	tools.addDir('Favorites','url',30,iconfavorites,background,'')
+	tools.addDir('Recently Watched','url',32,iconrecent,background,'')
 	tools.addDir('Account Information','url',6,iconaccount,background,'')
 	tools.addDir('Live TV','live',1,iconlive,background,'')
 	tools.addDir('Movies/VOD','vod',3,iconMoviesod,background,'')
@@ -163,10 +170,6 @@ def livecategory():
 		root = ET.fromstring(data)
 	except Exception:
 		return
-		try:
-		    xbmc.log(f'{ADDON_ID}: Parsed params -> url={url} name={name} mode={mode} icon={iconimage} description={description} tmdb_id={tmdb_id}', LOG_NOTICE)
-		except Exception:
-		    pass
 
 	for ch in root.findall('.//channel'):
 		t = ch.findtext('title', default='')

@@ -132,7 +132,6 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
   - Favorites: top-level Favorites now show category entries only (Live TV / Movies/VOD / Series) with counts — click a category to view that category's favorited items.
   - Favorites: added automatic classification and a stored `category` for favorites (live / vod / series) so items are grouped correctly when listed.
   - Playback: added per-category subtitle toggles in Settings → Playback (`subtitles_live`, `subtitles_vod`, `subtitles_series`) and enforced subtitle visibility per-category at playback start.
-  - Search: improved search scope (choose Live / Movies/VOD / Series / All) and aggregated results from multiple sources.
   - Bug fixes: small playback and EPG fixes (including a typo fix in the EPG updater call) and a number of defensive checks.
 
   ## Version 3.8.4 (2026-03-28)

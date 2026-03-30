@@ -4,7 +4,6 @@
 - Favorites: Top-level Favorites now present as three category entries (Live TV, Movies/VOD, Series) showing counts — select a category to view its favorited items.
 - Favorites: Favorites are now classified and stored with a `category` attribute (live / vod / series) to improve grouping and maintain correct ordering.
 - Playback: Added per-category subtitle toggles in Settings → Playback (`subtitles_live`, `subtitles_vod`, `subtitles_series`) and the addon now enforces subtitle visibility per-category when playback starts.
-- Search: Improved search scope selection (choose Live / Movies/VOD / Series / All) and aggregated results across sources.
 
 ### 🐛 Bug Fixes
 - Fixed a minor EPG updater typo and added defensive checks around playback start to avoid subtitle/EPG races.

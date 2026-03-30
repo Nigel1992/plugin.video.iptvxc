@@ -24,4 +24,9 @@
 	<category label="Features">
 		<setting id="max_history_items" type="number" label="Max items in watch history" default="25" />
 	</category>
+	<category label="Playback">
+		<setting id="subtitles_live" type="bool" label="Enable subtitles for Live TV" default="false" />
+		<setting id="subtitles_vod" type="bool" label="Enable subtitles for Movies/VOD" default="false" />
+		<setting id="subtitles_series" type="bool" label="Enable subtitles for Series" default="false" />
+	</category>
 </settings>

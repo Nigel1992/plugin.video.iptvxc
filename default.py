@@ -568,6 +568,58 @@ def _start_playback_watchdog():
 						 name='IPTVXC-PlayWatchdog', daemon=True)
 	t.start()
 
+def apply_subtitles_for_playback(player_obj, url_arg, name_arg='', desc_arg=''):
+	"""
+	Spawn a short-lived thread that waits for playback to start and then
+	sets subtitle visibility according to addon settings per content type.
+	"""
+	try:
+		import threading
+	except Exception:
+		threading = None
+
+	def _worker():
+		startt = time.time()
+		while time.time() - startt < 30:
+			try:
+				if player_obj.isPlaying():
+					try:
+						cat = tools.classify_favorite(mode, url_arg, desc_arg or '', name_arg or '')
+					except Exception:
+						cat = 'live'
+					try:
+						if cat == 'series':
+							enabled = ADDON.getSetting('subtitles_series') == 'true'
+						elif cat == 'vod':
+							enabled = ADDON.getSetting('subtitles_vod') == 'true'
+						else:
+							enabled = ADDON.getSetting('subtitles_live') == 'true'
+					except Exception:
+						enabled = False
+					try:
+						player_obj.showSubtitles(bool(enabled))
+					except Exception as e:
+						try:
+							xbmc.log(f'{ADDON_ID}: apply_subtitles failed: {e}', LOG_NOTICE)
+						except Exception:
+							pass
+					break
+			except Exception:
+				pass
+			xbmc.sleep(500)
+
+	try:
+		if threading:
+			t = threading.Thread(target=_worker, daemon=True)
+			t.start()
+		else:
+			_worker()
+	except Exception:
+		try:
+			_worker()
+		except Exception:
+			pass
+
 def stream_video(url):
 	url = buildcleanurl(url)
 	# Log to history and save as last played
@@ -602,8 +654,14 @@ def stream_video(url):
 	# repeatedly close dialogs even if the addon process is terminated
 	# by Kodi shortly after resolving the URL.
 	_start_playback_watchdog()
+	# call the EPG updater
 	epg.start_epg_updater(player_api, url, name or '')
 	player = xbmc.Player()
+	# Ensure subtitles follow addon settings once playback actually starts
+	try:
+		apply_subtitles_for_playback(player, url, name or '', description or '')
+	except Exception:
+		pass
 	# Wait for playback to actually start (up to 10 s), then exit as soon
 	# as it stops.  This prevents the invoker staying alive for the full
 	# 30-second guard window after the user presses X to stop.
@@ -959,11 +1017,48 @@ def extras():
 
 def favorites_list():
 	favs = tools.load_favorites()
-	if not favs:
-		tools.addDir('[COLOR grey]No favorites yet. Long-press on any item to add.[/COLOR]','url',-1,icon,background,'')
-		return
+
+	live_favs = []
+	vod_favs = []
+	series_favs = []
+
 	for fav in favs:
-		tools.addDir(fav.get('name',''), fav.get('url',''), int(fav.get('mode', 4)), fav.get('iconimage', icon), fav.get('fanart', background), fav.get('description',''))
+		try:
+			cat = fav.get('category') or tools.classify_favorite(fav.get('mode'), fav.get('url'), fav.get('description',''), fav.get('name',''))
+		except Exception:
+			cat = tools.classify_favorite(fav.get('mode'), fav.get('url'), fav.get('description',''), fav.get('name',''))
+		if cat == 'series':
+			series_favs.append(fav)
+		elif cat == 'vod' or cat == 'movie':
+			vod_favs.append(fav)
+		else:
+			live_favs.append(fav)
+
+	# If a specific category was requested (url set to 'live'/'vod'/'series'), show items for that category
+	current = (url or '').lower()
+	if current in ('live', 'vod', 'series'):
+		if current == 'live':
+			items = live_favs
+			icon_for_items = iconlive
+		elif current == 'vod':
+			items = vod_favs
+			icon_for_items = iconMoviesod
+		else:
+			items = series_favs
+			icon_for_items = iconTvseries
+
+		if not items:
+			tools.addDir('[COLOR grey]No favorites in this category. Long-press to add.[/COLOR]','url',-1,icon_for_items,background,'')
+			return
+
+		for fav in items:
+			tools.addDir(fav.get('name',''), fav.get('url',''), int(fav.get('mode', 4)), fav.get('iconimage', icon), fav.get('fanart', background), fav.get('description',''))
+		return
+
+	# Top-level Favorites menu: show categories with counts. Click a category to view its favorites.
+	tools.addDir('Live TV (%d)' % len(live_favs), 'live', 30, iconlive, background, '')
+	tools.addDir('Movies/VOD (%d)' % len(vod_favs), 'vod', 30, iconMoviesod, background, '')
+	tools.addDir('Series (%d)' % len(series_favs), 'series', 30, iconTvseries, background, '')
 
 def toggle_favorite():
 	fav_mode = params.get('fav_mode', '4')
@@ -1264,7 +1359,12 @@ elif mode==37:
 		liz.setArt({'icon': ch_icon or icon, 'thumb': ch_icon or icon})
 		liz.setInfo(type='Video', infoLabels={'Title': display_title, 'Plot': now_desc, 'TVShowTitle': ch_name or ''})
 		liz.setContentLookup(False)
-		xbmc.Player().play(stream_url, liz)
+		player = xbmc.Player()
+		player.play(stream_url, liz)
+		try:
+			apply_subtitles_for_playback(player, stream_url, ch_name or '', now_desc)
+		except Exception:
+			pass
 		epg.start_epg_updater(player_api, stream_url, ch_name or '')
 		xbmc.sleep(200)
 		xbmc.executebuiltin('Dialog.Close(busydialog)')
@@ -1288,7 +1388,12 @@ elif mode==35:
 	liz.setArt({'icon': icon, 'thumb': icon})
 	liz.setInfo(type='Video', infoLabels={'Title': display_title, 'Plot': now_desc, 'TVShowTitle': name or ''})
 	liz.setContentLookup(False)
-	xbmc.Player().play(play_url, liz)
+	player = xbmc.Player()
+	player.play(play_url, liz)
+	try:
+		apply_subtitles_for_playback(player, play_url, name or '', now_desc)
+	except Exception:
+		pass
 	epg.start_epg_updater(player_api, play_url, name or '')
 	xbmc.sleep(200)
 	xbmc.executebuiltin('Dialog.Close(busydialog)')

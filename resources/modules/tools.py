@@ -822,19 +822,77 @@ def save_favorites(favs):
             json.dump(favs, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
+def classify_favorite(mode, url, description='', name=''):
+	"""
+	Return one of: 'live', 'vod', 'series'.
+	Prefer the originating mode when available, otherwise use URL/description/name heuristics.
+	"""
+	try:
+		m = int(mode)
+	except Exception:
+		m = None
+
+	SERIES_MODES = {18, 19, 20, 25}
+	VOD_MODES = {3}
+	LIVE_MODES = {2, 12, 13}
+
+	if m in SERIES_MODES:
+		return 'series'
+	if m in VOD_MODES:
+		return 'vod'
+	if m in LIVE_MODES:
+		return 'live'
+
+	url_l = (url or '').lower()
+	desc_l = (description or '').lower()
+	name_l = (name or '').lower()
+
+	if '/movie/' in url_l or '/vod/' in url_l or 'movie' in url_l or 'vod' in url_l:
+		return 'vod'
+	if '/series/' in url_l or '/season' in url_l or re.search(r's\d+e\d+', url_l) or 'episode' in url_l:
+		return 'series'
+	if '/live/' in url_l or 'stream' in url_l or 'channel' in url_l or 'stream_id' in url_l:
+		return 'live'
+	if 'tmdb_id' in desc_l or 'tmdb_id' in url_l:
+		return 'vod'
+	if re.search(r's\d+e\d+', name_l) or 'season' in name_l or 'episode' in name_l:
+		return 'series'
+
+	return 'live'
+
 
 def add_favorite(url, name, mode, iconimage, fanart, description):
-    favs = load_favorites()
-    for fav in favs:
-        if fav.get('url') == url:
-            return False
-    favs.append({
-        'url': url, 'name': name, 'mode': int(mode),
-        'iconimage': iconimage, 'fanart': fanart,
-        'description': description
-    })
-    save_favorites(favs)
-    return True
+	favs = load_favorites()
+	for fav in favs:
+		if fav.get('url') == url:
+			return False
+
+	# Classify favorite (live/vod/series) based on where it came from
+	try:
+		category = classify_favorite(mode, url, description, name)
+	except Exception:
+		category = 'live'
+
+	try:
+		mode_int = int(mode)
+	except Exception:
+		try:
+			mode_int = int(str(mode))
+		except Exception:
+			mode_int = 4
+
+	favs.append({
+		'url': url,
+		'name': name,
+		'mode': mode_int,
+		'iconimage': iconimage,
+		'fanart': fanart,
+		'description': description,
+		'category': category,
+	})
+
+	save_favorites(favs)
+	return True
 
 def remove_favorite(url):
     favs = load_favorites()

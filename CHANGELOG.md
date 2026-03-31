@@ -1,3 +1,16 @@
+# Version 3.8.6 (2026-04-01)
+
+### ✨ Added / Improvements
+- Added section-scoped search choice to Search mode (Live TV & Catchup / Movies/VOD / Series / All sections).
+- Added network behavior settings: `net_timeout`, `net_retries`, `net_backoff` in settings.
+- Added resilience: search uses `OPEN_URL()` with retry/backoff and caching fallback (panel/vod/series endpoints).
+- Added persistent search state and last-result cache to speed repeated searches.
+
+### 🐛 Bug Fixes
+- Fixed inconsistent search order: enforced deterministic dedupe+sort (live/movie/vod/series/catchup) in `search()`.
+- Fixed stale query text and scope restore for back navigation by storing search state in JSON.
+- Improved overall stability for transient network errors during search.
+
 # Version 3.8.5 (2026-03-31)
 
 ### ✨ Added / Improvements

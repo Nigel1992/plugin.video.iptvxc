@@ -350,6 +350,13 @@ def vod(url):
 def search():
 	if mode==3:
 		return False
+	# Let user choose a scope
+	scope_items = ['Live TV & Catchup','Movies/VOD','Series','All sections']
+	choice = DIALOG.select('Search in', scope_items)
+	if choice == -1:
+		return
+	scope = ['live','vod','series','all'][choice]
+
 	text = searchdialog()
 	if not text:
 		return
@@ -357,7 +364,10 @@ def search():
 	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
 	results = []
 	# Search Live TV (available_channels)
+	# Try quick network fetch with retries; fall back to a short-lived cached copy
 	raw = tools.OPEN_URL(panel_api)
+	if not raw:
+		raw = tools.OPEN_URL_CACHED(panel_api, ttl_minutes=1)
 	if raw:
 		try:
 			parse = json.loads(raw)
@@ -374,60 +384,72 @@ def search():
 				stream_type = (a.get('stream_type','') or '').replace(r'\/', '/')
 				container_extension = a.get('container_extension','mp4')
 				if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
-					if 'movie' in stream_type:
+					if scope in ('all','vod') and 'movie' in stream_type:
 						results.append(('movie', name, play_movies+stream_id+'.'+container_extension, 4, thumb, background, ''))
-					if 'live' in stream_type:
+					if scope in ('all','live') and 'live' in stream_type:
 						results.append(('live', name, play_live+stream_id, 4, thumb, background, ''))
-	# Search VOD (Movies)
-	vod_data = tools.OPEN_URL(vod_url)
-	if vod_data:
-		try:
-			root = ET.fromstring(vod_data)
-			for ch in root.findall('.//channel'):
-				t = ch.findtext('title', default='')
-				name = str(tools.b64(t)).replace('?', '') if t else ''
-				if q in name.lower() or (q not in name.lower() and q in name):
-					playlist = ch.findtext('playlist_url')
-					thumb = ch.findtext('desc_image', default='')
-					if thumb:
-						thumb = thumb.replace('<![CDATA[','').replace(']]>','')
-					stream = ch.findtext('stream_url', default='')
-					url1 = tools.check_protocol((playlist or stream).replace('<![CDATA[','').replace(']]>',''))
-					desc_raw = ch.findtext('description', default='')
-					desc = tools.b64(desc_raw) if desc_raw else ''
-					if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
-						results.append(('vod', name, url1, 4, thumb or background, background, desc))
-		except Exception:
-			pass
-	# Search Series
-	series_data = tools.OPEN_URL(player_api+'&action=get_series')
-	if series_data:
-		try:
-			ser_cat = json.loads(series_data)
-			for ser in ser_cat:
-				name = ser.get('name','')
-				if q in name.lower() or (q not in name.lower() and q in name):
-					series_id = str(ser.get('series_id',''))
-					cover = ser.get('cover','')
-					results.append(('series', name, player_api+'&action=get_series_info&series_id='+series_id, 19, cover, background, ''))
-		except Exception:
-			pass
-	# Search Catch-up (if available)
-	catchup_raw = tools.OPEN_URL(panel_api)
-	if catchup_raw:
-		try:
-			parse = json.loads(catchup_raw)
-			channels = parse.get('available_channels', {})
-			for key in channels:
-				a = channels[key]
-				if int(a.get('tv_archive', 0)) == 1:
-					name = (a.get('epg_channel_id','') or '').replace(r'\/', '/')
+	if scope in ('all','vod'):
+		# Search VOD (Movies)
+		# Prefer cached VOD catalog to avoid blocking UI; try network if cache miss
+		vod_data = tools.OPEN_URL_CACHED(vod_url, ttl_minutes=tools.CONTENT_CACHE_TTL_MOVIES)
+		if not vod_data:
+			vod_data = tools.OPEN_URL(vod_url)
+		if vod_data:
+			try:
+				root = ET.fromstring(vod_data)
+				for ch in root.findall('.//channel'):
+					t = ch.findtext('title', default='')
+					name = str(tools.b64(t)).replace('?', '') if t else ''
 					if q in name.lower() or (q not in name.lower() and q in name):
-						thumb = (a.get('stream_icon','') or '').replace(r'\/', '/')
-						sid = str(a.get('stream_id',''))
-						results.append(('catchup', name, 'url', 13, thumb, background, sid))
-		except Exception:
-			pass
+						playlist = ch.findtext('playlist_url')
+						thumb = ch.findtext('desc_image', default='')
+						if thumb:
+							thumb = thumb.replace('<![CDATA[','').replace(']]>','')
+						stream = ch.findtext('stream_url', default='')
+						url1 = tools.check_protocol((playlist or stream).replace('<![CDATA[','').replace(']]>',''))
+						desc_raw = ch.findtext('description', default='')
+						desc = tools.b64(desc_raw) if desc_raw else ''
+						if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
+							results.append(('vod', name, url1, 4, thumb or background, background, desc))
+			except Exception:
+				pass
+	if scope in ('all','series'):
+		# Search Series
+		series_endpoint = player_api + '&action=get_series'
+		series_data = tools.OPEN_URL_CACHED(series_endpoint, ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
+		if not series_data:
+			series_data = tools.OPEN_URL(series_endpoint)
+		if series_data:
+			try:
+				ser_cat = json.loads(series_data)
+				for ser in ser_cat:
+					name = ser.get('name','')
+					if q in name.lower() or (q not in name.lower() and q in name):
+						series_id = str(ser.get('series_id',''))
+						cover = ser.get('cover','')
+						results.append(('series', name, player_api+'&action=get_series_info&series_id='+series_id, 19, cover, background, ''))
+			except Exception:
+				pass
+	if scope in ('all','live'):
+		# Search Catch-up (if available)
+		catchup_raw = tools.OPEN_URL(panel_api)
+		if not catchup_raw:
+			catchup_raw = tools.OPEN_URL_CACHED(panel_api, ttl_minutes=1)
+		if catchup_raw:
+			try:
+				parse = json.loads(catchup_raw)
+				channels = parse.get('available_channels', {})
+				for key in channels:
+					a = channels[key]
+					if int(a.get('tv_archive', 0)) == 1:
+						name = (a.get('epg_channel_id','') or '').replace(r'\/', '/')
+						if q in name.lower() or (q not in name.lower() and q in name):
+							thumb = (a.get('stream_icon','') or '').replace(r'\/', '/')
+							sid = str(a.get('stream_id',''))
+							results.append(('catchup', name, 'url', 13, thumb, background, sid))
+			except Exception:
+				pass
+
 	# Display all results
 	section_labels = {
 		'live': '[B][COLOR lime]LIVE[/COLOR][/B] ',
@@ -436,6 +458,27 @@ def search():
 		'series': '[B][COLOR aqua]SERIES[/COLOR][/B] ',
 		'catchup': '[B][COLOR orange]CATCH-UP[/COLOR][/B] '
 	}
+	# Log query and results counts, then normalize, de-duplicate and sort
+	try:
+		xbmc.log('IPTVXC: search requested q=%s' % q, LOG_NOTICE)
+		# raw count before de-duplication
+		raw_count = len(results)
+		seen = set()
+		unique_results = []
+		for r in results:
+			key = (r[0], (r[1] or '').strip().lower())
+			if key not in seen:
+				seen.add(key)
+				unique_results.append(r)
+		results = unique_results
+		type_priority = {'live': 0, 'movie': 1, 'vod': 2, 'series': 3, 'catchup': 4}
+		results.sort(key=lambda x: (type_priority.get(x[0], 99), (x[1] or '').lower()))
+		final_count = len(results)
+		xbmc.log('IPTVXC: search raw=%d final=%d q=%s' % (raw_count, final_count, q), LOG_NOTICE)
+	except Exception:
+		# If dedupe/sort/logging fails for any reason, fall back to the original order
+		pass
+
 	for r in results:
 		# r = (type, name, url, mode, thumb, background, desc/sid)
 		label = section_labels.get(r[0], '') + r[1]

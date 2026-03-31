@@ -9,6 +9,12 @@
 		<setting id="xxx_pw" option="hidden" type="text" label="Adult Content Password (Default: 1234)" default="1234"/>
 		<setting label="Test Credentials" type="action" action="RunPlugin(plugin://plugin.video.iptvxc/?mode=9)" option="close" />
 	</category>
+	<category label="Network">
+		<setting id="net_timeout" type="number" label="Network timeout (seconds) — per-request timeout before retry" default="3" />
+		<setting id="net_retries" type="number" label="Network retries — number of retry attempts for transient errors" default="2" />
+		<setting id="net_backoff" type="number" label="Retry backoff (seconds) — base delay for exponential backoff (backoff * 2^(attempt-1))" default="1" />
+		<setting label="Tip: Lower timeout makes UI more responsive on flaky networks; increase retries for unstable servers." type="label" />
+	</category>
 	<category label="Cache">
 		<setting id="tv_cache_ttl" type="enum" label="Live TV cache expiry" values="5 minutes|15 minutes|30 minutes|1 hour|6 hours|12 hours|1 day|7 days" default="2"/>
 		<setting id="movies_cache_ttl" type="enum" label="Movies cache expiry" values="5 minutes|15 minutes|30 minutes|1 hour|6 hours|12 hours|1 day|7 days" default="3"/>

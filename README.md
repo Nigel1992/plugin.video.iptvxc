@@ -128,7 +128,13 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 
   ---
 
-  ## Version 3.8.5 (2026-03-31)
+  ## Version 3.8.6 (2026-04-01)
+  - Search: added scoped search popup for Live TV & Catchup / Movies/VOD / Series / All sections.
+  - Search: added `net_timeout`, `net_retries`, `net_backoff` settings with explanation in Settings > Network.
+  - Search: added retry/backoff and fallback to cache for panel/vod/series endpoints on transient failures.
+  - Search: added deterministic dedupe+sort and state persistence for query + scope (restore on back navigation).
+
+## Version 3.8.5 (2026-03-31)
   - Favorites: top-level Favorites now show category entries only (Live TV / Movies/VOD / Series) with counts — click a category to view that category's favorited items.
   - Favorites: added automatic classification and a stored `category` for favorites (live / vod / series) so items are grouped correctly when listed.
   - Playback: added per-category subtitle toggles in Settings → Playback (`subtitles_live`, `subtitles_vod`, `subtitles_series`) and enforced subtitle visibility per-category at playback start.

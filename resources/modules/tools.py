@@ -127,6 +127,20 @@ def _get_content_ttl(setting_id, default_minutes):
 	except Exception:
 		return default_minutes
 
+
+def _get_setting_int(key, default):
+	"""Read an integer addon setting, returning `default` on error or empty."""
+	try:
+		v = GET_SET.getSetting(key)
+		if v is None:
+			return default
+		s = str(v).strip()
+		if s == '':
+			return default
+		return int(float(s))
+	except Exception:
+		return default
+
 CONTENT_CACHE_TTL_TV     = _get_content_ttl('tv_cache_ttl',     30)
 CONTENT_CACHE_TTL_MOVIES = _get_content_ttl('movies_cache_ttl', 60)
 CONTENT_CACHE_TTL_SERIES = _get_content_ttl('series_cache_ttl', 60)
@@ -321,7 +335,18 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
 	return ok
 
-def OPEN_URL(url):
+def OPEN_URL(url, timeout=None, retries=None, backoff=None):
+	"""Fetch a URL with a tiny in-memory cache and optional retries.
+
+	If `timeout`, `retries` or `backoff` are None, values are read from
+	addon settings `net_timeout`, `net_retries`, `net_backoff` with sensible
+	defaults. Returns decoded text on success or empty string on failure.
+	Sets `OPEN_URL._last_error` to the last exception seen.
+	"""
+	# Determine effective parameters from settings when not provided
+	eff_timeout = timeout if timeout is not None else _get_setting_int('net_timeout', 3)
+	eff_retries = retries if retries is not None else _get_setting_int('net_retries', 2)
+	eff_backoff = backoff if backoff is not None else _get_setting_int('net_backoff', 1)
 	# Simple in-memory cache to avoid repeated network calls within a short time window
 	try:
 		cache = OPEN_URL._cache
@@ -337,25 +362,42 @@ def OPEN_URL(url):
 	if url in cache and (now - cache_time.get(url, 0)) < ttl_seconds:
 		return cache[url]
 
-	try:
-		req = Request(url)
-		req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0')
-		response = urlopen(req, timeout=15)
-		link = response.read().decode('utf-8')
-		response.close()
-		# Clear any previous error
-		OPEN_URL._last_error = None
-		cache[url] = link
-		cache_time[url] = now
-		return link
-	except Exception as e:
-		# Store last exception for callers to inspect (useful for HTTP status handling)
-		OPEN_URL._last_error = e
+	last_exc = None
+	for attempt in range(1, max(1, int(eff_retries)) + 1):
 		try:
-			xbmc.log('%s-OPEN_URL error for %s: %s' % (ADDON_ID, url, e), 2)
-		except Exception:
-			pass
-		return ''
+			req = Request(url)
+			req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)')
+			response = urlopen(req, timeout=eff_timeout)
+			link = response.read().decode('utf-8')
+			response.close()
+			# Clear any previous error
+			OPEN_URL._last_error = None
+			cache[url] = link
+			cache_time[url] = now
+			return link
+		except Exception as e:
+			last_exc = e
+			# Store last exception for callers to inspect (useful for HTTP status handling)
+			OPEN_URL._last_error = e
+			try:
+				xbmc.log('%s-OPEN_URL attempt %s error for %s: %s' % (ADDON_ID, attempt, url, e), 2)
+			except Exception:
+				pass
+			# If we'll try again, sleep a bit (exponential backoff)
+			if attempt < eff_retries:
+				try:
+					sleep_time = eff_backoff * (2 ** (attempt - 1))
+					xbmc.log('%s-OPEN_URL retrying %s in %ss' % (ADDON_ID, url, sleep_time), 1)
+					time.sleep(sleep_time)
+				except Exception:
+					pass
+
+	# All attempts exhausted
+	try:
+		xbmc.log('%s-OPEN_URL giving up for %s (last error: %s)' % (ADDON_ID, url, last_exc), 2)
+	except Exception:
+		pass
+	return ''
 
 def _ensure_cache_dir():
 	"""Create the addon file cache directory if it doesn't exist."""

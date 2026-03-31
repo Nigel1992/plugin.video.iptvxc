@@ -200,7 +200,19 @@ Please avoid sharing provider credentials publicly.
 Include Kodi version, platform, and logs when reporting bugs.
 
 ---
+## 📋 Project Board & Roadmap
 
+We use GitHub Projects to track issues, feature requests, and the project roadmap. View the board here: https://github.com/Nigel1992/plugin.video.iptvxc/projects
+
+The board reflects current priorities and status (for example: Backlog, In Progress, Review, Done). To help us triage and plan work:
+
+- **Report bugs:** Open an issue with reproduction steps, Kodi version, platform, and logs; add the `bug` label.
+- **Request features:** Open an issue with a clear description and use the `enhancement` label, or create a project card describing the request.
+- **Contribute code:** Submit a pull request referencing the related issue or project card; maintainers will triage and link it on the Projects board.
+
+The Projects board is the single source of truth for planned work and releases — check it for current priorities and planned milestones.
+
+---
 ## 🙏 Credits
 
 - Original work by **Fire TV Guru**

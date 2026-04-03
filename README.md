@@ -43,6 +43,9 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 ---
 
 ## 🏆 Donators Hall of Fame
+
+![Supporters](https://img.shields.io/badge/Supporters-1-orange?style=flat-square)
+
 A huge thank you to the supporters who have contributed to charity through this project:
 
 | Donator | Date | Goal / Charity |

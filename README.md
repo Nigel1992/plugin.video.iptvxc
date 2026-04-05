@@ -1,18 +1,16 @@
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Nigel1992)
 
->  All donations go towards your chosen charity. You can pick any charity you'd like, and 5% is retained due to Ko-Fi fees. As a thank you, your name will be listed as a supporter/donor in this project. Feel free to email me at thedjskywalker@gmail.com for proof! :)
+> [!IMPORTANT]
 
 <div align="center">
 
-# **XCUI Streams**  
-### *plugin.video.iptvxc*
+# **XCUI Streams** ### *plugin.video.iptvxc*
 
-**High-performance XC / XCUI playback for Kodi**  
-Live TV • VOD • Catch-up • TV Series  
+**High-performance XC / XCUI playback for Kodi** Live TV • VOD • Catch-up • TV Series  
 Optimized for **Kodi v21 (Omega)** & **Python 3.13**
 
 [![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
-[![Version](https://img.shields.io/badge/Version-3.8.5-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.5)
+[![Version](https://img.shields.io/badge/Version-3.8.6-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.6)
 [![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=flat-square)](https://kodi.tv)
 [![Python](https://img.shields.io/badge/Python-3.13-yellow?style=flat-square)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
@@ -40,6 +38,19 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 - 🛠️ Built-in speed test and advanced settings presets
 - 🧠 Defensive handling of inconsistent provider payloads
 - 🎯 Optimized for Kodi v21 (Omega) / Python 3.13
+
+---
+
+## 🏆 Donators Hall of Fame
+
+![Supporters](https://img.shields.io/badge/Supporters-1-orange?style=flat-square)
+
+A huge thank you to the supporters who have contributed to charity through this project:
+
+| Donator | Date | Goal / Charity |
+| :--- | :--- | :--- |
+| **Joe/Joseph T** | March 2026 | KWF |
+| *Your Name?* | *2026* | *Your Choice* |
 
 ---
 
@@ -71,7 +82,7 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 3) Enter provider credentials in Settings → Accounts  
 4) Browse Live / VOD / Series / Catch-up
 
-##  What you’ll need
+## 📋 What you’ll need
 
 - Kodi 21 (Omega) or newer
 - XC/XCUI-compatible account (host, username, password)
@@ -79,11 +90,11 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 
 ## 🧭 Navigation map
 
-- Live TV → Categories → Channels → Play
-- VOD → Categories → Titles → Play
-- Series → Show → Season → Episode → Play
-- Catch-up → Channel → Program → Play (if provider supports)
-- Tools → Speed Test / Advanced settings presets
+- **Live TV** → Categories → Channels → Play
+- **VOD** → Categories → Titles → Play
+- **Series** → Show → Season → Episode → Play
+- **Catch-up** → Channel → Program → Play (if provider supports)
+- **Tools** → Speed Test / Advanced settings presets
 
 ---
 
@@ -99,17 +110,15 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 
 ## 📦 Installation
 
-1. **Download the latest release**  
-   👉 https://github.com/Nigel1992/plugin.video.iptvxc/releases
+1. **Download the latest release** 👉 https://github.com/Nigel1992/plugin.video.iptvxc/releases
 
-2. **Or install from the official Kodi repository**  
-  👉 [Nigel1992/kodi-repository](https://github.com/Nigel1992/kodi-repository)
+2. **Or install from the official Kodi repository** 👉 [Nigel1992/kodi-repository](https://github.com/Nigel1992/kodi-repository)
 
-2. **Install in Kodi**
+3. **Install in Kodi**
    - `Settings` → `Add-ons` → `Install from zip file`
    - Select `plugin.video.iptvxc-<version>.zip`
 
-3. **Configure**
+4. **Configure**
   - Open the add-on
   - Enter your provider credentials in **Settings**
 
@@ -118,108 +127,75 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 ## ▶️ Usage
 
 - Open **XCUI Streams** from *Video add-ons*
-- Browse:
-  - **Live TV**
-  - **VOD**
-  - **TV Series**
-  - **Catch-up TV**
-- **TV Series flow**  
-  *Series* → *Season* → *Episode*
+- Browse: **Live TV**, **VOD**, **TV Series**, **Catch-up TV**
+- **TV Series flow:** *Series* → *Season* → *Episode*
 
-  ---
+---
 
-  ## Version 3.8.6 (2026-04-01)
-  - Search: added scoped search popup for Live TV & Catchup / Movies/VOD / Series / All sections.
-  - Search: added `net_timeout`, `net_retries`, `net_backoff` settings with explanation in Settings > Network.
-  - Search: added retry/backoff and fallback to cache for panel/vod/series endpoints on transient failures.
-  - Search: added deterministic dedupe+sort and state persistence for query + scope (restore on back navigation).
+## 📝 Release History
 
-## Version 3.8.5 (2026-03-31)
-  - Favorites: top-level Favorites now show category entries only (Live TV / Movies/VOD / Series) with counts — click a category to view that category's favorited items.
-  - Favorites: added automatic classification and a stored `category` for favorites (live / vod / series) so items are grouped correctly when listed.
-  - Playback: added per-category subtitle toggles in Settings → Playback (`subtitles_live`, `subtitles_vod`, `subtitles_series`) and enforced subtitle visibility per-category at playback start.
-  - Bug fixes: small playback and EPG fixes (including a typo fix in the EPG updater call) and a number of defensive checks.
+### Version 3.8.6 (2026-04-01)
+- **Search:** added scoped search popup for Live TV & Catchup / Movies/VOD / Series / All sections.
+- **Network:** added `net_timeout`, `net_retries`, `net_backoff` settings with explanation in Settings > Network.
+- **Stability:** added retry/backoff and fallback to cache for panel/vod/series endpoints on transient failures.
+- **Logic:** added deterministic dedupe+sort and state persistence for query + scope (restore on back navigation).
 
-  ## Version 3.8.4 (2026-03-28)
-  - Mapped menu `icon_*.png` files in `resources/media/` to home menu items (Favorites, Recently Watched, Account Info, Live TV, Movies VOD, Series, TV Guide, Catchup, Search, Settings, Extras).
-  - Added `icon_LAST_PLAYED.png` and set it as the Last Played home icon (local fallback to avoid blocked remote hosts).
-  - Set Extras to use `icon_EXTRAS.png` as a local fallback.
-  - Fixed `IndentationError` in `default.py` (normalized ART PATHS and removed an unreachable nested try/except in `livecategory()`).
-  - Packaged and published release `v3.8.4` with a clean ZIP; updated docs and release notes.
+### Version 3.8.5 (2026-03-31)
+- **Favorites:** top-level Favorites now show category entries only (Live TV / Movies/VOD / Series) with counts — click a category to view that category's favorited items.
+- **Favorites:** added automatic classification and a stored `category` for favorites (live / vod / series) so items are grouped correctly when listed.
+- **Playback:** added per-category subtitle toggles in Settings → Playback (`subtitles_live`, `subtitles_vod`, `subtitles_series`) and enforced subtitle visibility per-category at playback start.
+- **Bug fixes:** small playback and EPG fixes (including a typo fix in the EPG updater call) and a number of defensive checks.
 
-  ---
+### Version 3.8.4 (2026-03-28)
+- Mapped menu `icon_*.png` files in `resources/media/` to home menu items.
+- Added `icon_LAST_PLAYED.png` and set it as the Last Played home icon.
+- Set Extras to use `icon_EXTRAS.png` as a local fallback.
+- Fixed `IndentationError` in `default.py` (normalized ART PATHS).
+- Packaged and published release `v3.8.4` with a clean ZIP.
 
-  ## Version 3.6.0 (2026-03-03)
-  - Fixed freeze/slowdown when pressing X to stop a stream
-  - Fixed intermittent loading overlay (busy dialog) getting stuck on stream start/stop
-  - Fixed Kodi becoming unresponsive on Stop
-  - Fixed UI freeze caused by unreachable channel icon servers (30s curl stall)
-  - Added persistent file-based caching for Live TV, Movies/VOD, Series, Catch-up
-  - Added user-configurable cache expiry in Settings → Cache (5 minutes → 7 days)
-  - Added Clear content cache button in Settings → Cache
-  - Persistent icon-host reachability cache (survives between plugin invocations)
-  - **Custom EPG / TV Guide** — full in-addon EPG window with two-panel layout (channels + programme schedule), category browsing, search for categories and channels, progress bars on currently airing shows, and info panel
-  - **EPG remembers last category** — reopening the TV Guide auto-loads the previously viewed category
-  - **Programme click plays channel** — selecting any programme in the schedule plays that channel directly
-  - **Live programme info in player overlay** — pressing Info (i) during playback shows the current programme title, description, and channel name
-  - **Auto-updating EPG info** — background thread refreshes programme metadata every 60 seconds during playback so the info overlay always shows the current show
-  - **Favorites** — long-press any channel, movie, or series to add/remove from Favorites; new Favorites menu on home screen for instant access to your most-watched content
-  - **Recently Watched History** — automatically logs the last 25 streams played (configurable); accessible from the home screen with timestamps; clear from Extras
-  - **Multi-Server Profiles** — save, switch between, and delete multiple IPTV server credentials from Settings → Switch Server; cache is auto-cleared on switch
-  - **Last Played** — the last played stream appears at the top of home as a quick-resume item
-  - **Speed test and advanced settings helpers**
-  - **Robust handling of inconsistent provider APIs**
-  - **Icon-host reachability checks** — dead icon servers never stall the UI
-  - **No pvr.iptvsimple dependency** — EPG is fully self-contained within the addon
+### Version 3.6.0 (2026-03-03)
+- Fixed freeze/slowdown when pressing X to stop a stream.
+- Fixed Kodi becoming unresponsive on Stop or stuck busy dialogs.
+- Added persistent file-based caching with user-configurable expiry.
+- **Custom EPG / TV Guide** — full self-contained in-addon EPG window.
+- **Favorites & Recently Watched** — history logging and home screen access.
+- **Multi-Server Profiles** — save and switch between multiple provider credentials.
 
-  ---
-
-  ## Version 3.5.2 (2026-01-28)
-  - Playback now automatically retries up to 5 times if the connection drops during playback or seeking (improves reliability for unstable streams)
-
-  ---
-
-  For a complete list of changes and release history, see [CHANGELOG.md](CHANGELOG.md).
+### Version 3.5.2 (2026-01-28)
+- Playback now automatically retries up to 5 times if the connection drops.
 
 ---
 
 ## 🛠️ Troubleshooting
 
-- **No content visible?**
-  - Verify provider credentials
-  - Check network connectivity
-- **Missing metadata**
-  - Normal for some providers
-- **Deprecation warnings**
-  - `ListItem.setInfo()` warnings do not affect playback
-  - Migration to `InfoTagVideo` is planned
-- **Provider differences**
-  - Not all providers share the same API/URL structure; features can work on one host and fail on another
-  - Open an issue with your host name/URL and API paths if something breaks so we can add support
+- **No content visible?** Verify provider credentials and check network connectivity.
+- **Missing metadata:** Normal for some providers.
+- **Deprecation warnings:** `ListItem.setInfo()` warnings do not affect playback.
+- **Provider differences:** Not all providers share the same API structure; open an issue with your host name if something breaks.
 
 ---
 
 ## 🤝 Contributing
 
-Issues and PRs are welcome.  
-Please avoid sharing provider credentials publicly.  
-Include Kodi version, platform, and logs when reporting bugs.
+Issues and PRs are welcome. Please avoid sharing provider credentials publicly. Include Kodi version, platform, and logs when reporting bugs.
 
 ---
+
 ## 📋 Project Board & Roadmap
 
-We use GitHub Projects to track issues, feature requests, and the project roadmap. View the board here: https://github.com/Nigel1992/plugin.video.iptvxc/projects
+We use GitHub Projects to track issues and the roadmap: [View the board here](https://github.com/Nigel1992/plugin.video.iptvxc/projects)
 
-The board reflects current priorities and status (for example: Backlog, In Progress, Review, Done). To help us triage and plan work:
-
-- **Report bugs:** Open an issue with reproduction steps, Kodi version, platform, and logs; add the `bug` label.
-- **Request features:** Open an issue with a clear description and use the `enhancement` label, or create a project card describing the request.
-- **Contribute code:** Submit a pull request referencing the related issue or project card; maintainers will triage and link it on the Projects board.
-
-The Projects board is the single source of truth for planned work and releases — check it for current priorities and planned milestones.
+- **Report bugs:** Use the `bug` label with reproduction steps.
+- **Request features:** Use the `enhancement` label.
+- **Contribute code:** Submit a PR referencing the related issue.
 
 ---
+
 ## 🙏 Credits
 
 - Original work by **Fire TV Guru**
 - Community contributions and testing
+
+## Support This Project
+
+Support this project! All donations go towards your chosen charity. You can pick any charity you'd like, and I will ensure the funds are sent their way. Please note that standard payment processing fees (Ko-fi & PayPal) will be deducted from the total. As a thank you, your name will be listed as a supporter/donor in this project. Feel free to email me at thedjskywalker@gmail.com for proof of the donation or to let me know which charity you've selected!

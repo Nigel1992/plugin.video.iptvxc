@@ -1,15 +1,30 @@
 # Version 3.8.6 (2026-04-01)
 
-### ✨ Added / Improvements
-- Added section-scoped search choice to Search mode (Live TV & Catchup / Movies/VOD / Series / All sections).
-- Added network behavior settings: `net_timeout`, `net_retries`, `net_backoff` in settings.
-- Added resilience: search uses `OPEN_URL()` with retry/backoff and caching fallback (panel/vod/series endpoints).
-- Added persistent search state and last-result cache to speed repeated searches.
+### 🚀 Release highlights
+- Search experience completely revamped for precision and speed.
+- Added optional search scope selector (Live TV/Catchup | Movies/VOD | Series | All).
+- Added configurable network safeguards:
+  - `net_timeout` (seconds)
+  - `net_retries` (attempt count)
+  - `net_backoff` (seconds between retries)
+- Added resilient request strategy around `OPEN_URL()` with retry/backoff and endpoint fallback.
+- Added persistent search state (query + scope + results) for reliable navigation and back/forward restore.
 
-### 🐛 Bug Fixes
-- Fixed inconsistent search order: enforced deterministic dedupe+sort (live/movie/vod/series/catchup) in `search()`.
-- Fixed stale query text and scope restore for back navigation by storing search state in JSON.
-- Improved overall stability for transient network errors during search.
+### 🛠️ Behavioral improvements
+- Deterministic results ordering across repeated searches:
+  - dedupe by normalized key (type + title)
+  - forced sort priority (live → movie → vod → series → catchup)
+- Eliminated stale query/scope confusion via JSON state persistence in addon_data.
+- Better transient network error handling with automatic retry and graceful degradation.
+
+### 🧹 Packaging quality
+- Release package now contains only the addon folder structure (plugin.video.iptvxc/*).
+- Excludes `.venv`, `.git`, `tests`, `__pycache__`, `.pyc` and previous archive artifacts.
+
+### 🐛 Bug fixes
+- Fixed inconsistent search result order and duplicate entry presentation.
+- Fixed persistent query/scope reset issues on navigation back.
+- Reduced failure scenario impact from temporary API endpoint failures.
 
 # Version 3.8.5 (2026-03-31)
 

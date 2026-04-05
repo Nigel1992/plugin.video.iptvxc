@@ -678,7 +678,7 @@ def stream_video(url):
 			now_title, now_desc = epg.get_now_playing(player_api, sid)
 	except Exception:
 		pass
-	liz = xbmcgui.ListItem(path=str(url))
+	liz = xbmcgui.ListItem(path=str(url), offscreen=True)
 	liz.setArt({'icon': icon, 'thumb': icon})
 	display_title = now_title if now_title else (name or '')
 	display_desc = now_desc if now_desc else (description or '')
@@ -1398,7 +1398,7 @@ elif mode==37:
 		tools.add_to_history(stream_url, ch_name or '', ch_icon or icon, '')
 		tools.save_last_played(stream_url, ch_name or '', ch_icon or icon, '')
 		display_title = now_title if now_title else (ch_name or '')
-		liz = xbmcgui.ListItem(path=str(stream_url))
+		liz = xbmcgui.ListItem(path=str(stream_url), offscreen=True)
 		liz.setArt({'icon': ch_icon or icon, 'thumb': ch_icon or icon})
 		liz.setInfo(type='Video', infoLabels={'Title': display_title, 'Plot': now_desc, 'TVShowTitle': ch_name or ''})
 		liz.setContentLookup(False)
@@ -1427,7 +1427,7 @@ elif mode==35:
 	except Exception:
 		pass
 	display_title = now_title if now_title else (name or '')
-	liz = xbmcgui.ListItem(path=str(play_url))
+	liz = xbmcgui.ListItem(path=str(play_url), offscreen=True)
 	liz.setArt({'icon': icon, 'thumb': icon})
 	liz.setInfo(type='Video', infoLabels={'Title': display_title, 'Plot': now_desc, 'TVShowTitle': name or ''})
 	liz.setContentLookup(False)

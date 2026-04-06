@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kodi_branch: [nexus, omega, master]
+        kodi_branch: [nexus, omega, piers]
 
     steps:
       - name: Checkout repository

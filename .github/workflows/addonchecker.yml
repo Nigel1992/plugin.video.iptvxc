@@ -1,39 +1,60 @@
-name: Test Kodi Add-on (Omega)
+name: Validate Kodi Add-on
 
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
+
+concurrency:
+  group: addon-check-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   kodi-addon-check:
-    name: Kodi Add-on Checker (Omega)
+    name: addon-check (${{ matrix.kodi_branch }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        kodi_branch: [nexus, omega, master]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run Kodi Add-on Checker (v21 Omega)
-        uses: xbmc/action-kodi-addon-checker
-        with:
-          kodi-version: omega
-          addon-id: plugin.video.iptvxc
-          allow-beta: true
-
-  python-syntax:
-    name: Python 3.13 Syntax Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.13
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.11"
+
+      - name: Install addon-check
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install kodi-addon-checker
+
+      - name: Run addon-check
+        run: |
+          set -euo pipefail
+          EXTRA_ARGS=""
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            EXTRA_ARGS="--PR"
+          fi
+          kodi-addon-checker . --branch "${{ matrix.kodi_branch }}" ${EXTRA_ARGS}
+
+  python-syntax:
+    name: Python Syntax Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Compile Python files
         run: |

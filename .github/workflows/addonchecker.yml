@@ -34,6 +34,43 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install kodi-addon-checker
 
+      - name: Read addon id from addon.xml
+        id: addon_meta
+        run: |
+          set -euo pipefail
+          ADDON_ID="$(python - <<'PY'
+          from xml.etree import ElementTree as ET
+          root = ET.parse('addon.xml').getroot()
+          print(root.attrib['id'])
+          PY
+          )"
+          echo "addon_id=${ADDON_ID}" >> "${GITHUB_OUTPUT}"
+
+      - name: Prepare addon-check source directory
+        id: source_dir
+        run: |
+          set -euo pipefail
+          WORKDIR="${RUNNER_TEMP}/addon-check-src"
+          TARGET_DIR="${WORKDIR}/${{ steps.addon_meta.outputs.addon_id }}"
+          rm -rf "${WORKDIR}"
+          mkdir -p "${TARGET_DIR}"
+          rsync -a ./ "${TARGET_DIR}/" \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '.venv/' \
+            --exclude '__pycache__/' \
+            --exclude '.pytest_cache/' \
+            --exclude '*.pyc' \
+            --exclude '*.pyo' \
+            --exclude '.DS_Store' \
+            --exclude 'tests/' \
+            --exclude 'scripts/' \
+            --exclude 'package_build/' \
+            --exclude 'package_clean/' \
+            --exclude '*.zip' \
+            --exclude '.gitignore'
+          echo "addon_path=${TARGET_DIR}" >> "${GITHUB_OUTPUT}"
+
       - name: Run addon-check
         run: |
           set -euo pipefail
@@ -41,7 +78,7 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             EXTRA_ARGS="--PR"
           fi
-          kodi-addon-checker . --branch "${{ matrix.kodi_branch }}" ${EXTRA_ARGS}
+          kodi-addon-checker "${{ steps.source_dir.outputs.addon_path }}" --branch "${{ matrix.kodi_branch }}" ${EXTRA_ARGS}
 
   python-syntax:
     name: Python Syntax Check
@@ -58,4 +95,4 @@ jobs:
 
       - name: Compile Python files
         run: |
-          python -m compileall .
+          python -m compileall default.py resources

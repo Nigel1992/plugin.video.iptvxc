@@ -10,7 +10,7 @@
 Optimized for **Kodi v21 (Omega)** & **Python 3.13**
 
 [![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
-[![Version](https://img.shields.io/badge/Version-3.8.6-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.6)
+[![Version](https://img.shields.io/badge/Version-3.8.7-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.7)
 [![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=flat-square)](https://kodi.tv)
 [![Python](https://img.shields.io/badge/Python-3.13-yellow?style=flat-square)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
@@ -133,6 +133,10 @@ A huge thank you to the supporters who have contributed to charity through this 
 ---
 
 ## 📝 Release History
+
+### Version 3.8.7 (2026-08-25)
+- **Clear Cache:** fixed an error on Kodi 21 caused by the removed `xbmc.translatePath()` API.
+- **Compatibility:** cache paths now use Kodi's cross-platform `xbmcvfs.translatePath()` API on Windows, Linux, macOS, Android, and other supported platforms.
 
 ### Version 3.8.6 (2026-04-01)
 - **Search:** added scoped search popup for Live TV & Catchup / Movies/VOD / Series / All sections.

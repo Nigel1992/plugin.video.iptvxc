@@ -465,7 +465,7 @@ def clear_cache():
 	# Always clear addon file cache
 	clear_addon_cache()
 	# Also clear Kodi application cache
-	xbmc_cache_path = os.path.join(xbmc.translatePath('special://home'), 'cache')
+	xbmc_cache_path = os.path.join(xbmcvfs.translatePath('special://home'), 'cache')
 	confirm=xbmcgui.Dialog().yesno("Please Confirm","Clear addon data cache and Kodi application cache?")
 	if confirm:
 		if os.path.exists(xbmc_cache_path)==True:

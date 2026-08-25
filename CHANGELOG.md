@@ -1,3 +1,12 @@
+# Version 3.8.7 (2026-08-25)
+
+### 🐛 Bug fixes
+- Fixed **Extras → Clear Cache** failing on Kodi 21 with `AttributeError: module 'xbmc' has no attribute 'translatePath'`.
+- Replaced the removed `xbmc.translatePath()` call with Kodi's cross-platform `xbmcvfs.translatePath()` API, restoring cache clearing on Windows, Linux, macOS, Android, and other supported platforms.
+
+### 📦 Packaging
+- Published a Kodi-installable ZIP containing the required top-level `plugin.video.iptvxc/` directory.
+
 # Version 3.8.6 (2026-04-01)
 
 ### 🚀 Release highlights

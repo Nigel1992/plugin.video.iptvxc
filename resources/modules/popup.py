@@ -201,10 +201,11 @@ def popup():
 			self.setFocusId(self.exit)
 		
 		def opensite(self):
+			if not SIGNUP_URL:
+				xbmcgui.Dialog().ok(ADDON_NAME, 'No sign-up URL is configured.')
+				return
 			if xbmc.getCondVisibility('system.platform.android'):
 				xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % (SIGNUP_URL) )
-			if xbmc.getCondVisibility('system.platform.osx'):
-				os.system("open -a /Applications/Safari.app %s") % (SIGNUP_URL)
 			else:
 				webbrowser.open(SIGNUP_URL)
 

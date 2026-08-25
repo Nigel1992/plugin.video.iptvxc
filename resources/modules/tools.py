@@ -88,6 +88,32 @@ _HOST_PROBE_CACHE_FILE = os.path.join(CACHE_DIR, 'host_probe_cache.json')
 _HOST_TEST_TIMEOUT = 2              # seconds for the TCP connect probe
 _HOST_CACHE_TTL    = 3600          # re-test icon hosts after 1 hour (fixed)
 
+def redact_sensitive(value):
+	"""Hide Xtream credentials before text is written to Kodi's log."""
+	text = str(value or '')
+	text = re.sub(r'(?i)([?&](?:username|password)=)[^&\s]+', r'\1REDACTED', text)
+	text = re.sub(
+		r'(?i)(/(?:live|movie|series)/)[^/\s]+/[^/\s]+/',
+		r'\1REDACTED/REDACTED/', text)
+	return text
+
+def _atomic_write_json(path, data, indent=None):
+	"""Write JSON without leaving a partially-written state file on failure."""
+	tmp_path = path + '.tmp'
+	os.makedirs(os.path.dirname(path), exist_ok=True)
+	try:
+		with open(tmp_path, 'w', encoding='utf-8') as f:
+			json.dump(data, f, ensure_ascii=False, indent=indent)
+			f.flush()
+		os.replace(tmp_path, path)
+	except Exception:
+		try:
+			if os.path.exists(tmp_path):
+				os.remove(tmp_path)
+		except Exception:
+			pass
+		raise
+
 def _load_host_cache():
 	"""Load the persistent host-probe cache from disk."""
 	try:
@@ -103,9 +129,7 @@ def _load_host_cache():
 def _save_host_cache(cache):
 	"""Persist the host-probe cache to disk."""
 	try:
-		os.makedirs(CACHE_DIR, exist_ok=True)
-		with open(_HOST_PROBE_CACHE_FILE, 'w') as f:
-			json.dump(cache, f)
+		_atomic_write_json(_HOST_PROBE_CACHE_FILE, cache)
 	except Exception:
 		pass
 
@@ -151,22 +175,23 @@ _TRUSTED_HOSTS = frozenset([
 	'i.imgur.com', 'imgur.com',
 ])
 
-def _test_host_reachable(hostname):
-	"""Return True if *hostname* accepts a TCP connection on port 80."""
+def _test_host_reachable(hostname, port):
+	"""Return True if *hostname* accepts a TCP connection on *port*."""
 	now = time.time()
-	if hostname in _host_reachable_cache:
-		ok, ts = _host_reachable_cache[hostname]
+	cache_key = '%s:%s' % (hostname, port)
+	if cache_key in _host_reachable_cache:
+		ok, ts = _host_reachable_cache[cache_key]
 		if now - ts < _HOST_CACHE_TTL:
 			return ok
 	try:
-		sock = socket.create_connection((hostname, 80), timeout=_HOST_TEST_TIMEOUT)
+		sock = socket.create_connection((hostname, port), timeout=_HOST_TEST_TIMEOUT)
 		sock.close()
-		_host_reachable_cache[hostname] = (True, now)
+		_host_reachable_cache[cache_key] = (True, now)
 		_save_host_cache(_host_reachable_cache)
 		return True
 	except (socket.timeout, socket.error, OSError):
-		xbmc.log('%s: icon host %s unreachable – using fallback icon' % (ADDON_ID, hostname), 2)
-		_host_reachable_cache[hostname] = (False, now)
+		xbmc.log('%s: icon host %s:%s unreachable – using fallback icon' % (ADDON_ID, hostname, port), 2)
+		_host_reachable_cache[cache_key] = (False, now)
 		_save_host_cache(_host_reachable_cache)
 		return False
 
@@ -190,7 +215,8 @@ def safe_icon(iconimage, fallback=None):
 			return fallback
 		if hostname in _TRUSTED_HOSTS:
 			return url_str
-		if _test_host_reachable(hostname):
+		port = parsed.port or (443 if parsed.scheme.lower() == 'https' else 80)
+		if _test_host_reachable(hostname, port):
 			return url_str
 		return fallback
 	except Exception:
@@ -199,8 +225,8 @@ def safe_icon(iconimage, fallback=None):
 def check_protocol(url):
 	parsed = urlparse(dns_text)
 	protocol = parsed.scheme
-	if protocol=='https':
-		return url.replace('http','https')
+	if protocol == 'https' and str(url).startswith('http://'):
+		return 'https://' + str(url)[7:]
 	else:
 		return url
 
@@ -209,7 +235,12 @@ def log(msg):
 	xbmc.log('%s-%s'%(ADDON_ID,msg),2)
 
 def b64(obj):
-	return base64.b64decode(obj).decode('utf-8')
+	if not obj:
+		return ''
+	try:
+		return base64.b64decode(obj).decode('utf-8', errors='replace')
+	except Exception:
+		return str(obj)
 
 def percentage(part, whole):
 	return 100 * float(part)/float(whole)
@@ -248,7 +279,7 @@ def addDir(name,url,mode,iconimage,fanart,description):
 	# The ListItem art below still uses the real (possibly remote) channel icon.
 	u=sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(ICON))+"&description="+urllib.parse.quote_plus(str(description))
 	try:
-		xbmc.log('%s: addDir name=%s mode=%s url=%s' % (ADDON_ID, str(name)[:80], str(mode), str(url)[:160]), 1)
+		xbmc.log('%s: addDir name=%s mode=%s url=%s' % (ADDON_ID, str(name)[:80], str(mode), redact_sensitive(url)[:160]), 1)
 	except Exception:
 		pass
 	ok=True
@@ -272,17 +303,16 @@ def addDir(name,url,mode,iconimage,fanart,description):
 		pass
 	if cm:
 		liz.addContextMenuItems(cm)
-	if mode==4:
+	if mode in (4, 35):
 		liz.setProperty("IsPlayable","true")
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
-	elif mode==7 or mode==10 or mode==17 or mode==21:
+	elif mode in (7, 10, 17, 21, 37):
 		liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description})
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
 	else:
 		liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description})
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True)
 	return ok
-	xbmcplugin.endOfDirectory
 	
 def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runtime,genre):
 	# Extract TMDB ID from description if available
@@ -304,7 +334,8 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 	liz.setArt({'icon':safe_img, 'thumb':safe_img})
 	liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description,"Rating":rating,"Year":year,"Duration":runtime,"Cast":cast,"Genre":genre})
 	liz.setProperty('fanart_image', fanart)
-	liz.setProperty("IsPlayable","true")
+	if mode not in (19, 20):
+		liz.setProperty("IsPlayable","true")
 	cm = []
 	cm.append(('Movie Information', 'XBMC.Action(Info)'))
 	
@@ -328,7 +359,7 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 	else:
 		cm.append(('[COLOR gold]Add to Favorites[/COLOR]', 'RunPlugin(' + fav_url + ')'))
 	
-	liz.addContextMenuItems(cm,replaceItems=True)
+	liz.addContextMenuItems(cm)
 	if mode==19 or mode==20:
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True)
 	else:
@@ -380,21 +411,21 @@ def OPEN_URL(url, timeout=None, retries=None, backoff=None):
 			# Store last exception for callers to inspect (useful for HTTP status handling)
 			OPEN_URL._last_error = e
 			try:
-				xbmc.log('%s-OPEN_URL attempt %s error for %s: %s' % (ADDON_ID, attempt, url, e), 2)
+				xbmc.log('%s-OPEN_URL attempt %s error for %s: %s' % (ADDON_ID, attempt, redact_sensitive(url), redact_sensitive(e)), 2)
 			except Exception:
 				pass
 			# If we'll try again, sleep a bit (exponential backoff)
 			if attempt < eff_retries:
 				try:
 					sleep_time = eff_backoff * (2 ** (attempt - 1))
-					xbmc.log('%s-OPEN_URL retrying %s in %ss' % (ADDON_ID, url, sleep_time), 1)
+					xbmc.log('%s-OPEN_URL retrying %s in %ss' % (ADDON_ID, redact_sensitive(url), sleep_time), 1)
 					time.sleep(sleep_time)
 				except Exception:
 					pass
 
 	# All attempts exhausted
 	try:
-		xbmc.log('%s-OPEN_URL giving up for %s (last error: %s)' % (ADDON_ID, url, last_exc), 2)
+		xbmc.log('%s-OPEN_URL giving up for %s (last error: %s)' % (ADDON_ID, redact_sensitive(url), redact_sensitive(last_exc)), 2)
 	except Exception:
 		pass
 	return ''
@@ -429,7 +460,7 @@ def OPEN_URL_CACHED(url, ttl_minutes=30):
 				with open(cache_file, 'r', encoding='utf-8') as f:
 					data = f.read()
 				if data:
-					xbmc.log('%s: Cache HIT for %s (age: %ds)' % (ADDON_ID, url[:80], int(age)), 1)
+					xbmc.log('%s: Cache HIT for %s (age: %ds)' % (ADDON_ID, redact_sensitive(url)[:80], int(age)), 1)
 					return data
 		except Exception:
 			pass
@@ -440,7 +471,7 @@ def OPEN_URL_CACHED(url, ttl_minutes=30):
 		try:
 			with open(cache_file, 'w', encoding='utf-8') as f:
 				f.write(data)
-			xbmc.log('%s: Cache STORE for %s' % (ADDON_ID, url[:80]), 1)
+			xbmc.log('%s: Cache STORE for %s' % (ADDON_ID, redact_sensitive(url)[:80]), 1)
 		except Exception:
 			pass
 	return data
@@ -450,11 +481,14 @@ def clear_addon_cache():
 	_ensure_cache_dir()
 	count = 0
 	try:
-		for f in os.listdir(CACHE_DIR):
-			fp = os.path.join(CACHE_DIR, f)
+		for filename in os.listdir(CACHE_DIR):
+			fp = os.path.join(CACHE_DIR, filename)
 			if os.path.isfile(fp):
-				os.remove(fp)
-				count += 1
+				try:
+					os.remove(fp)
+					count += 1
+				except OSError:
+					pass
 		xbmc.log('%s: Addon file cache cleared (%d files)' % (ADDON_ID, count), 1)
 	except Exception:
 		pass
@@ -462,32 +496,34 @@ def clear_addon_cache():
 
 def clear_cache():
 	xbmc.log('CLEAR CACHE ACTIVATED')
-	# Always clear addon file cache
-	clear_addon_cache()
-	# Also clear Kodi application cache
 	xbmc_cache_path = os.path.join(xbmcvfs.translatePath('special://home'), 'cache')
-	confirm=xbmcgui.Dialog().yesno("Please Confirm","Clear addon data cache and Kodi application cache?")
-	if confirm:
-		if os.path.exists(xbmc_cache_path)==True:
-			for root, dirs, files in os.walk(xbmc_cache_path):
-				file_count = 0
-				file_count += len(files)
-				if file_count > 0:
-						for f in files:
-							try:
-								os.unlink(os.path.join(root, f))
-							except:
-								pass
-						for d in dirs:
-							try:
-								shutil.rmtree(os.path.join(root, d))
-							except:
-								pass
-		LogNotify("[COLOR {0}]{1}[/COLOR]".format(COLOR1, ADDON_NAME), '[COLOR {0}]Cache Cleared Successfully![/COLOR]'.format(COLOR2))
-		xbmc.executebuiltin("Container.Refresh()")
-	else:
-		LogNotify("[COLOR {0}]{1}[/COLOR]".format(COLOR1, ADDON_NAME), '[COLOR {0}]Addon cache cleared[/COLOR]'.format(COLOR2))
-		xbmc.executebuiltin("Container.Refresh()")
+	confirm = xbmcgui.Dialog().yesno('Please Confirm', 'Clear the add-on cache and Kodi application cache?')
+	if not confirm:
+		return False
+	addon_count = clear_addon_cache()
+	kodi_count = 0
+	failures = 0
+	if os.path.isdir(xbmc_cache_path):
+		for root, dirs, files in os.walk(xbmc_cache_path, topdown=False):
+			for filename in files:
+				try:
+					os.unlink(os.path.join(root, filename))
+					kodi_count += 1
+				except Exception:
+					failures += 1
+			for dirname in dirs:
+				try:
+					os.rmdir(os.path.join(root, dirname))
+				except OSError:
+					pass
+	message = 'Cleared %d add-on cache file(s) and %d Kodi cache file(s).' % (addon_count, kodi_count)
+	if failures:
+		message += '\n%d file(s) could not be removed.' % failures
+	elif not os.path.isdir(xbmc_cache_path):
+		message += '\nKodi application cache is not present on this device.'
+	xbmcgui.Dialog().ok(ADDON_NAME, message)
+	xbmc.executebuiltin('Container.Refresh')
+	return failures == 0
 
 def get_params():
 	param=[]
@@ -507,16 +543,23 @@ def get_params():
 	return param
 
 def getlocalip():
-	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	s.connect(('8.8.8.8', 0))
-	s = s.getsockname()[0]
-	return s
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	try:
+		sock.connect(('8.8.8.8', 80))
+		return sock.getsockname()[0]
+	except OSError:
+		return 'Unavailable'
+	finally:
+		sock.close()
 
 def getexternalip():
-	import json 
-	url = urllib.request.urlopen("https://api.ipify.org/?format=json")
-	data = json.loads(url.read().decode())
-	return str(data["ip"])
+	try:
+		response = urllib.request.urlopen('https://api.ipify.org/?format=json', timeout=3)
+		data = json.loads(response.read().decode())
+		response.close()
+		return str(data.get('ip', 'Unavailable'))
+	except Exception:
+		return 'Unavailable'
 
 def MonthNumToName(num):
 	if '01' in num:
@@ -627,18 +670,21 @@ def get_working_endpoint(base_url, user, password, timeout=10, retries=2, treat_
 	- treat HTTP codes 401/403/512 as invalid credentials when treat_512_as_invalid True
 	- use requests when available; else urllib
 	"""
+	base_url = str(base_url).rstrip('/')
+	credentials = urllib.parse.urlencode({'username': user, 'password': password})
 	endpoints = [
-		f"{base_url}/player_api.php?username={user}&password={password}",
-		f"{base_url}/panel_api.php?username={user}&password={password}",
-		f"{base_url}/api.php?username={user}&password={password}",
-		f"{base_url}/get.php?username={user}&password={password}&type=m3u_plus&output=ts",
-		f"{base_url}/client_area/player_api.php?username={user}&password={password}",
+		f"{base_url}/player_api.php?{credentials}",
+		f"{base_url}/panel_api.php?{credentials}",
+		f"{base_url}/api.php?{credentials}",
+		f"{base_url}/get.php?{credentials}&type=m3u_plus&output=ts",
+		f"{base_url}/client_area/player_api.php?{credentials}",
 	]
 	headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+	last_http_code = None
 
 	for attempt in range(1, retries+1):
 		for url in endpoints:
-			xbmc.log(f'{ADDON_ID}: get_working_endpoint attempt {attempt} -> {url}', 1)
+			xbmc.log(f'{ADDON_ID}: get_working_endpoint attempt {attempt} -> {redact_sensitive(url)}', 1)
 			try:
 				if exist_requests:
 					resp = requests.get(url, headers=headers, timeout=timeout)
@@ -655,14 +701,14 @@ def get_working_endpoint(base_url, user, password, timeout=10, retries=2, treat_
 				content = ''
 				# Store last error like OPEN_URL
 				OPEN_URL._last_error = he
-				xbmc.log(f'{ADDON_ID}: HTTPError {code} for {url}', 1)
+				xbmc.log(f'{ADDON_ID}: HTTPError {code} for {redact_sensitive(url)}', 1)
 			except URLError as ue:
 				OPEN_URL._last_error = ue
-				xbmc.log(f'{ADDON_ID}: URLError for {url}: {ue}', 1)
+				xbmc.log(f'{ADDON_ID}: URLError for {redact_sensitive(url)}: {redact_sensitive(ue)}', 1)
 				continue
 			except Exception as e:
 				OPEN_URL._last_error = e
-				xbmc.log(f'{ADDON_ID}: Exception for {url}: {e}', 1)
+				xbmc.log(f'{ADDON_ID}: Exception for {redact_sensitive(url)}: {redact_sensitive(e)}', 1)
 				continue
 
 			# handle status codes
@@ -670,14 +716,14 @@ def get_working_endpoint(base_url, user, password, timeout=10, retries=2, treat_
 				# check content type
 				if content and ('#EXTM3U' in content):
 					if notify:
-						xbmc.log(f'{ADDON_ID}: Found M3U at {url}', 1)
+						xbmc.log(f'{ADDON_ID}: Found M3U at {redact_sensitive(url)}', 1)
 					return {'url': url, 'type': 'm3u', 'status': code, 'data': content}
 				# try json
 				try:
 					j = json.loads(content)
 					if isinstance(j, dict) and 'user_info' in j:
 						if notify:
-							xbmc.log(f'{ADDON_ID}: Found valid JSON at {url}', 1)
+							xbmc.log(f'{ADDON_ID}: Found valid JSON at {redact_sensitive(url)}', 1)
 						return {'url': url, 'type': 'json', 'status': code, 'data': j}
 				except Exception:
 					# not JSON, continue to next endpoint
@@ -685,29 +731,31 @@ def get_working_endpoint(base_url, user, password, timeout=10, retries=2, treat_
 
 			# non-200 codes
 			if code in (401, 403) or (treat_512_as_invalid and code == 512):
-				xbmc.log(f'{ADDON_ID}: Invalid credentials detected (HTTP {code}) at {url}', 1)
+				xbmc.log(f'{ADDON_ID}: Invalid credentials detected (HTTP {code}) at {redact_sensitive(url)}', 1)
 				if notify:
 					xbmcgui.Dialog().ok(ADDON_NAME, 'Test Failed\nInvalid DNS or Login Credentials')
 				return {'url': url, 'type': None, 'status': code, 'data': None, 'error': 'invalid_credentials'}
 			# 512 when not treated as invalid: log and continue
 			if code == 512:
-				xbmc.log(f'{ADDON_ID}: Potential Account/MAC Issue (HTTP 512) at {url}', 1)
+				xbmc.log(f'{ADDON_ID}: Potential Account/MAC Issue (HTTP 512) at {redact_sensitive(url)}', 1)
 				continue
-			# other HTTP errors
-			if code >= 400:
-				xbmc.log(f'{ADDON_ID}: HTTP Error {code} at {url}', 1)
-				if notify:
-					xbmcgui.Dialog().ok(ADDON_NAME, f'HTTP Error {code} when testing credentials')
-				return {'url': url, 'type': None, 'status': code, 'data': None, 'error': 'http_error'}
+			# A panel may not expose every legacy endpoint.  Continue through the
+			# complete list for 404/405/5xx instead of failing on the first URL.
+			if code is not None and code >= 400:
+				last_http_code = code
+				xbmc.log(f'{ADDON_ID}: HTTP Error {code} at {redact_sensitive(url)}; trying next endpoint', 1)
+				continue
 
 	# all attempts failed
 	msg = 'All endpoint tests failed. Please check DNS, credentials and network connectivity.'
+	if last_http_code is not None:
+		msg += ' Last HTTP status: %s.' % last_http_code
 	xbmc.log(f'{ADDON_ID}: {msg}', 1)
 	if notify:
 		xbmcgui.Dialog().ok(ADDON_NAME, msg)
 	return None
 # -- Account expiry helpers --
-import threading, datetime
+import datetime
 
 def get_account_expiry_info(base_url=None, user=None, password=None, timeout=8):
     """Return dict with expiry information: {'days': int|None, 'expiry_ts': int|None, 'unlimited': bool} or {'error': '...'}"""
@@ -802,45 +850,34 @@ def notify_account_expiry(threshold_days=None, show_dialog=False):
     return False
 
 
-def start_expiry_background_check(interval_hours=None):
-    """Starts a background thread that periodically checks expiry while addon runs.
+EXPIRY_CHECK_FILE = os.path.join(ADDON_DATA, 'expiry_check.json')
 
-    If `interval_hours` is None, the setting `expiry_notify_interval_hours` is used (default 24).
-    Thread stores flag in its .running attribute to allow future stop (not currently exposed in UI).
-    """
-    # determine effective interval (hours)
-    try:
-        if interval_hours is None:
-            interval_hours = int(GET_SET.getSetting('expiry_notify_interval_hours') or 24)
-        else:
-            interval_hours = int(interval_hours)
-    except Exception:
-        interval_hours = 24
-
-    if interval_hours < 1:
-        interval_hours = 1
-
-    xbmc.log(f'{ADDON_ID}: Starting expiry background check every {interval_hours} hour(s)', 1)
-
-    def _worker():
-        t = threading.current_thread()
-        # convert to seconds
-        total_seconds = max(1, int(interval_hours * 3600))
-        while getattr(t, 'running', True):
-            try:
-                notify_account_expiry()
-            except Exception:
-                pass
-            # sleep in 1-second increments to remain responsive to possible stop flag changes
-            for _ in range(total_seconds):
-                if not getattr(t, 'running', True):
-                    break
-                xbmc.sleep(1000)
-
-    thr = threading.Thread(target=_worker, name='IPTVXC-ExpiryCheck', daemon=True)
-    thr.running = True
-    thr.start()
-    return thr
+def notify_account_expiry_throttled(interval_hours=None):
+	"""Run at most one expiry request per interval, without a resident thread."""
+	try:
+		if GET_SET.getSetting('expiry_notify_enabled') != 'true':
+			return False
+		if interval_hours is None:
+			interval_hours = int(GET_SET.getSetting('expiry_notify_interval_hours') or 24)
+		interval_seconds = max(1, int(interval_hours)) * 3600
+		account_key = hashlib.sha256(('%s\0%s' % (
+			GET_SET.getSetting('DNS'), GET_SET.getSetting('Username'))).encode('utf-8')).hexdigest()
+		now = time.time()
+		state = {}
+		try:
+			with open(EXPIRY_CHECK_FILE, 'r', encoding='utf-8') as f:
+				state = json.load(f)
+		except Exception:
+			pass
+		if state.get('account') == account_key and now - float(state.get('timestamp', 0)) < interval_seconds:
+			return False
+		# Persist before the request so repeated home refreshes cannot launch
+		# concurrent checks when a provider is slow or unavailable.
+		_atomic_write_json(EXPIRY_CHECK_FILE, {'account': account_key, 'timestamp': now})
+		return notify_account_expiry()
+	except Exception as e:
+		xbmc.log('%s: expiry check failed: %s' % (ADDON_ID, redact_sensitive(e)), 1)
+		return False
 
 
 # ---------------------------------------------------------------------------
@@ -859,9 +896,7 @@ def load_favorites():
 
 def save_favorites(favs):
     try:
-        os.makedirs(ADDON_DATA, exist_ok=True)
-        with open(FAVORITES_FILE, 'w', encoding='utf-8') as f:
-            json.dump(favs, f, ensure_ascii=False, indent=2)
+        _atomic_write_json(FAVORITES_FILE, favs, indent=2)
     except Exception:
         pass
 def classify_favorite(mode, url, description='', name=''):
@@ -962,9 +997,7 @@ def load_history():
 
 def save_history(history):
     try:
-        os.makedirs(ADDON_DATA, exist_ok=True)
-        with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
-            json.dump(history, f, ensure_ascii=False, indent=2)
+        _atomic_write_json(HISTORY_FILE, history, indent=2)
     except Exception:
         pass
 
@@ -994,13 +1027,11 @@ LAST_PLAYED_FILE = os.path.join(ADDON_DATA, 'last_played.json')
 
 def save_last_played(url, name, iconimage, description):
     try:
-        os.makedirs(ADDON_DATA, exist_ok=True)
-        with open(LAST_PLAYED_FILE, 'w', encoding='utf-8') as f:
-            json.dump({
-                'url': url, 'name': name,
-                'iconimage': iconimage, 'description': description,
-                'timestamp': time.time()
-            }, f, ensure_ascii=False)
+        _atomic_write_json(LAST_PLAYED_FILE, {
+            'url': url, 'name': name,
+            'iconimage': iconimage, 'description': description,
+            'timestamp': time.time()
+        })
     except Exception:
         pass
 
@@ -1030,9 +1061,7 @@ def load_profiles():
 
 def save_profiles(profiles):
     try:
-        os.makedirs(ADDON_DATA, exist_ok=True)
-        with open(PROFILES_FILE, 'w', encoding='utf-8') as f:
-            json.dump(profiles, f, ensure_ascii=False, indent=2)
+        _atomic_write_json(PROFILES_FILE, profiles, indent=2)
     except Exception:
         pass
 

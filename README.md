@@ -7,12 +7,12 @@
 # **XCUI Streams** ### *plugin.video.iptvxc*
 
 **High-performance XC / XCUI playback for Kodi** Live TV • VOD • Catch-up • TV Series  
-Optimized for **Kodi v21 (Omega)** & **Python 3.13**
+Optimized for **Kodi v21 (Omega)** & **Python 3**
 
 [![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
-[![Version](https://img.shields.io/badge/Version-3.8.7-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.7)
+[![Version](https://img.shields.io/badge/Version-3.8.8-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.8)
 [![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=flat-square)](https://kodi.tv)
-[![Python](https://img.shields.io/badge/Python-3.13-yellow?style=flat-square)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.x-yellow?style=flat-square)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
 
 ---
@@ -37,7 +37,7 @@ Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing
 - 🧭 Simple router-style navigation with restored series flows
 - 🛠️ Built-in speed test and advanced settings presets
 - 🧠 Defensive handling of inconsistent provider payloads
-- 🎯 Optimized for Kodi v21 (Omega) / Python 3.13
+- 🎯 Optimized for Kodi v21 (Omega) / Python 3
 
 ---
 
@@ -67,7 +67,7 @@ A huge thank you to the supporters who have contributed to charity through this 
 - **EPG remembers last category** — reopening the TV Guide auto-loads the previously viewed category
 - **Programme click plays channel** — selecting any programme in the schedule plays that channel directly
 - **Live programme info in player overlay** — pressing Info (i) during playback shows the current programme title, description, and channel name
-- **Auto-updating EPG info** — background thread refreshes programme metadata every 60 seconds during playback so the info overlay always shows the current show
+- **Fast playback startup** — playable routes use Kodi's standard resolver and activate fullscreen without long-lived plugin threads
 - **Favorites** — long-press any channel, movie, or series to add/remove from Favorites; new Favorites menu on home screen for instant access to your most-watched content
 - **Recently Watched History** — automatically logs the last 25 streams played (configurable); accessible from the home screen with timestamps; clear from Extras
 - **Multi-Server Profiles** — save, switch between, and delete multiple IPTV server credentials from Settings → Switch Server; cache is auto-cleared on switch
@@ -103,7 +103,7 @@ A huge thank you to the supporters who have contributed to charity through this 
 | Component | Requirement |
 |---------|-------------|
 | **Kodi** | v21 (Omega) or newer |
-| **Python** | 3.13 (bundled with Kodi v21) |
+| **Python** | Python 3 runtime bundled with Kodi |
 | **Account** | Active XC / XCUI-compatible provider |
 
 ---
@@ -133,6 +133,16 @@ A huge thank you to the supporters who have contributed to charity through this 
 ---
 
 ## 📝 Release History
+
+### Version 3.8.8 (2026-08-25)
+- **Search:** rebuilt around real Xtream catalogs, including list/dictionary responses, category-aware VOD requests, and legacy panel fallbacks.
+- **Search progress:** shows the current section and overall percentage while scanning, and can be cancelled.
+- **Search navigation:** stopping playback returns to the same results; returning to the main menu resets Search for a fresh query.
+- **Playback:** fixed Last Played/history route errors, standardized Kodi resolver playback, automatic fullscreen startup, and recurring Last Played labels.
+- **Responsiveness:** removed resident plugin threads that could hold Kodi invocations open.
+- **Cache:** confirmation now happens before deletion and a detailed result is always shown.
+- **Reliability:** improved endpoint fallback, atomic state writes, URL encoding, icon probing, and bounded network calls.
+- **Privacy:** redacted provider credentials from add-on logs and masked passwords in Account Information.
 
 ### Version 3.8.7 (2026-08-25)
 - **Clear Cache:** fixed an error on Kodi 21 caused by the removed `xbmc.translatePath()` API.

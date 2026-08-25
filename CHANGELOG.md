@@ -1,3 +1,39 @@
+# Version 3.8.8 (2026-08-25)
+
+### 🔎 Search and navigation
+- Fixed issue #2: Search now queries the actual Xtream `get_live_streams`, `get_vod_streams`, and `get_series` catalogs instead of mixing incompatible legacy panel data with a VOD category feed.
+- Supports providers returning either list-shaped or dictionary-shaped JSON catalogs.
+- Supports large providers that require `category_id=0` for a complete VOD catalog, then falls back to legacy panel endpoints when standard Live TV or VOD catalogs are empty.
+- Search covers Live TV, catch-up, Movies/VOD, and Series, with deterministic grouping and de-duplication.
+- Added a cancellable search progress window with the current section and overall percentage while catalogs are loaded, scanned, and results are built.
+- The active scope/query is retained until the user returns to the main menu, so stopping playback rebuilds the same results without reopening the selector and keyboard.
+- Added an explicit "No results found" entry instead of a generic add-on error.
+
+### ▶️ Playback and navigation
+- Fixed Last Played and Recently Watched items being registered as folders while starting playback directly, which caused Kodi `GetDirectory` errors and intermittent focus/input waits.
+- Unified normal, history, and Last Played playback through Kodi's standard `setResolvedUrl()` contract.
+- Explicitly marks every playback item as playable and activates fullscreen video as soon as Kodi opens the stream.
+- Removed long-lived playback, EPG, and expiry worker threads from short-lived plugin invocations, preventing Kodi from waiting on abandoned add-on threads.
+- Fixed recursively duplicated labels such as `Last Played just now: Last Played just now: ...`.
+
+### 🧹 Cache and reliability
+- Clear Cache now asks before deleting anything and always displays a detailed completion result.
+- Retains the Kodi 21 cross-platform cache fix using `xbmcvfs.translatePath()` on Windows, Linux, LibreELEC, Android, macOS, and other supported platforms.
+- Endpoint detection now continues past unsupported 404/405/5xx endpoints and tries all compatible Xtream fallbacks.
+- Account-expiry checks are persisted and throttled instead of running a resident background loop.
+- Favorites, history, Last Played, profiles, and related state now use atomic JSON writes to reduce corruption after an interrupted write.
+- HTTPS icon hosts are probed on the correct port, malformed base64 provider metadata is handled safely, and external-IP lookup has a bounded timeout.
+
+### 🔐 Privacy and compatibility
+- Provider credentials are URL-encoded for reserved characters and redacted from add-on-generated Kodi log messages.
+- Account Information masks the provider password.
+- Fixed an unsafe/broken macOS sign-up launcher fallback.
+- Folder entries are no longer incorrectly marked as playable.
+
+### 📦 Packaging
+- Published a clean Kodi-installable ZIP with the required top-level `plugin.video.iptvxc/` directory.
+- Excludes `.git`, `.venv`, tests, caches, compiled Python files, build directories, and previous release archives.
+
 # Version 3.8.7 (2026-08-25)
 
 ### 🐛 Bug fixes

@@ -110,23 +110,83 @@ iconsettings = os.path.join(MEDIA, 'icon_SETTINGS.png')
 dns				  = control.setting('DNS')
 username		  = control.setting('Username')
 password		  = control.setting('Password')
-live_url		  = '{0}/enigma2.php?username={1}&password={2}&type=get_live_categories'.format(dns,username,password)
-vod_url			  = '{0}/enigma2.php?username={1}&password={2}&type=get_vod_categories'.format(dns,username,password)
-series_url		  = '{0}/enigma2.php?username={1}&password={2}&type=get_series_categories'.format(dns,username,password)
-panel_api		  = '{0}/panel_api.php?username={1}&password={2}'.format(dns,username,password)
-player_api		  = '{0}/player_api.php?username={1}&password={2}'.format(dns,username,password)
-play_url		  = '{0}/live/{1}/{2}/'.format(dns,username,password)
-play_live		  = '{0}/{1}/{2}/'.format(dns,username,password)
-play_movies		  = '{0}/movie/{1}/{2}/'.format(dns,username,password)
-play_series		  = '{0}/series/{1}/{2}/'.format(dns,username,password)
+credential_query  = urllib.parse.urlencode({'username': username, 'password': password})
+path_username	  = urllib.parse.quote(username, safe='')
+path_password	  = urllib.parse.quote(password, safe='')
+live_url		  = '{0}/enigma2.php?{1}&type=get_live_categories'.format(dns,credential_query)
+vod_url			  = '{0}/enigma2.php?{1}&type=get_vod_categories'.format(dns,credential_query)
+series_url		  = '{0}/enigma2.php?{1}&type=get_series_categories'.format(dns,credential_query)
+panel_api		  = '{0}/panel_api.php?{1}'.format(dns,credential_query)
+player_api		  = '{0}/player_api.php?{1}'.format(dns,credential_query)
+play_url		  = '{0}/live/{1}/{2}/'.format(dns,path_username,path_password)
+play_live		  = '{0}/{1}/{2}/'.format(dns,path_username,path_password)
+play_movies		  = '{0}/movie/{1}/{2}/'.format(dns,path_username,path_password)
+play_series		  = '{0}/series/{1}/{2}/'.format(dns,path_username,path_password)
 #############################################################################
 adult_tags = ['xxx','xXx','XXX','adult','Adult','ADULT','adults','Adults','ADULTS','porn','Porn','PORN']
 
 def buildcleanurl(url):
-	url = str(url).replace('USERNAME',username).replace('PASSWORD',password)
+	# Percent-encoded credentials work in both URL paths and query values and
+	# avoid broken playback for accounts containing spaces or reserved signs.
+	url = str(url).replace('USERNAME', path_username).replace('PASSWORD', path_password)
 	return url
 
+def _clean_playback_name(value):
+	"""Return the real title behind Last Played/history display labels."""
+	text = str(value or '')
+	# Remove Kodi formatting before stripping generated prefixes.  Older
+	# versions saved the fully formatted Last Played label as the title,
+	# which caused the prefix to be nested again after every replay.
+	text = re.sub(r'\[/?(?:B|I|COLOR)(?:\s+[^\]]+)?\]', '', text, flags=re.IGNORECASE)
+	last_played_prefix = re.compile(
+		r'^\s*(?:\u25b6\s*)?Last Played(?:\s*\([^)]*\))?\s*:\s*',
+		re.IGNORECASE,
+	)
+	history_prefix = re.compile(
+		r'^\s*(?:just now|\d+[mhd]\s+ago)\s{2,}',
+		re.IGNORECASE,
+	)
+	while True:
+		cleaned = last_played_prefix.sub('', text)
+		cleaned = history_prefix.sub('', cleaned)
+		if cleaned == text:
+			break
+		text = cleaned
+	return text.strip() or 'Last Channel'
+
+SEARCH_STATE_FILE = os.path.join(ADDONDATA, 'active_search.json')
+
+def _load_search_state():
+	try:
+		with open(SEARCH_STATE_FILE, 'r', encoding='utf-8') as state_file:
+			state = json.load(state_file)
+		if isinstance(state, dict) and state.get('active'):
+			return state
+	except Exception:
+		pass
+	return {}
+
+def _save_search_state(scope, query_text):
+	try:
+		tools._atomic_write_json(SEARCH_STATE_FILE, {
+			'active': True, 'scope': str(scope),
+			'query': str(query_text), 'timestamp': time.time(),
+		})
+	except Exception as exc:
+		xbmc.log('%s: unable to save active search: %s' % (
+			ADDON_ID, tools.redact_sensitive(exc)), LOG_NOTICE)
+
+def _clear_search_state():
+	try:
+		if os.path.exists(SEARCH_STATE_FILE):
+			os.remove(SEARCH_STATE_FILE)
+	except Exception:
+		pass
+
 def home():
+	# Reaching the main menu ends the prior search session.  Until then its
+	# scope/query remain available so Kodi can rebuild results after playback.
+	_clear_search_state()
 	# Last Played quick access
 	last = tools.load_last_played()
 	if last and last.get('url'):
@@ -142,7 +202,7 @@ def home():
 				ago = '%dh ago' % (delta // 3600)
 			else:
 				ago = '%dd ago' % (delta // 86400)
-			channel_name = last.get('name', 'Last Channel')
+			channel_name = _clean_playback_name(last.get('name', 'Last Channel'))
 			label = '[B][COLOR lime]\u25b6 Last Played: %s[/COLOR][/B]' % channel_name
 			if ago:
 				label = '[B][COLOR lime]\u25b6 Last Played (%s): %s[/COLOR][/B]' % (ago, channel_name)
@@ -347,108 +407,243 @@ def vod(url):
 			else:
 				tools.addDir(name,url1,4,thumb or background,background,desc)
 
-def search():
-	if mode==3:
-		return False
-	# Let user choose a scope
-	scope_items = ['Live TV & Catchup','Movies/VOD','Series','All sections']
-	choice = DIALOG.select('Search in', scope_items)
-	if choice == -1:
-		return
-	scope = ['live','vod','series','all'][choice]
-
-	text = searchdialog()
-	if not text:
-		return
-	q = (text or '').lower()
-	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
-	results = []
-	# Search Live TV (available_channels)
-	# Try quick network fetch with retries; fall back to a short-lived cached copy
-	raw = tools.OPEN_URL(panel_api)
+def _catalog_items(endpoint, ttl_minutes):
+	"""Fetch an Xtream catalog and normalize list/dictionary response shapes."""
+	raw = tools.OPEN_URL_CACHED(endpoint, ttl_minutes=ttl_minutes)
 	if not raw:
-		raw = tools.OPEN_URL_CACHED(panel_api, ttl_minutes=1)
-	if raw:
+		return []
+	try:
+		data = json.loads(raw)
+		if isinstance(data, list):
+			return [item for item in data if isinstance(item, dict)]
+		if isinstance(data, dict):
+			for key in ('available_channels', 'channels', 'data', 'results'):
+				items = data.get(key)
+				if isinstance(items, list):
+					return [item for item in items if isinstance(item, dict)]
+				if isinstance(items, dict):
+					return [item for item in items.values() if isinstance(item, dict)]
+			return [item for item in data.values() if isinstance(item, dict)]
+	except Exception as exc:
+		xbmc.log('%s: search catalog parse failed for %s: %s' % (
+			ADDON_ID, tools.redact_sensitive(endpoint), tools.redact_sensitive(exc)), LOG_NOTICE)
+	return []
+
+def search():
+	# Search the actual Xtream catalogs.  The former implementation mixed a
+	# legacy panel dictionary with a VOD category feed and crashed when a
+	# provider returned the standard list-shaped response.
+	valid_scopes = ('live', 'vod', 'series', 'all')
+	stored_scope = urllib.parse.unquote_plus(str(params.get('scope', ''))).lower()
+	stored_query = urllib.parse.unquote_plus(str(params.get('query', ''))).strip()
+	if stored_scope in valid_scopes and stored_query:
+		# A parameterized route can be recreated by Kodi after playback, so the
+		# user returns to these results instead of seeing the search dialogs again.
+		scope = stored_scope
+		text = stored_query
+	else:
+		active_search = _load_search_state()
+		active_scope = str(active_search.get('scope') or '').lower()
+		active_query = str(active_search.get('query') or '').strip()
+		if active_scope in valid_scopes and active_query:
+			scope = active_scope
+			text = active_query
+		else:
+			scope_items = ['Live TV & Catchup', 'Movies/VOD', 'Series', 'All sections']
+			choice = DIALOG.select('Search in', scope_items)
+			if choice < 0:
+				return
+			scope = valid_scopes[choice]
+			text = searchdialog()
+			if not text:
+				return
+	_save_search_state(scope, text)
+	query = str(text).strip().casefold()
+	try:
+		xbmcplugin.setPluginCategory(int(sys.argv[1]), 'Search results: %s' % str(text))
+	except Exception:
+		pass
+	hide_adult = xbmcaddon.Addon().getSetting('hidexxx') == 'true'
+	results = []
+	legacy_items = None
+	search_cancelled = False
+	active_sections = [name for name in ('live', 'vod', 'series')
+		if scope in (name, 'all')]
+	section_names = {'live': 'Live TV & Catch-up', 'vod': 'Movies/VOD', 'series': 'Series'}
+	search_progress = xbmcgui.DialogProgress()
+	progress_open = False
+	try:
+		search_progress.create(ADDON_NAME, 'Preparing search for "%s"...' % str(text))
+		progress_open = True
+	except Exception:
+		pass
+
+	def update_section(section, fraction, action):
+		"""Update a section's share of the overall 0-90% search progress."""
+		if not progress_open:
+			return False
 		try:
-			parse = json.loads(raw)
+			index = active_sections.index(section)
+			span = 86.0 / max(1, len(active_sections))
+			percent = 3.0 + (index * span) + (max(0.0, min(1.0, fraction)) * span)
+			search_progress.update(int(percent), '%s %s...\nQuery: %s' % (
+				action, section_names[section], str(text)))
+			return bool(search_progress.iscanceled())
 		except Exception:
-			parse = {}
-		channels = parse.get('available_channels', {})
-		for key in channels:
-			a = channels[key]
-			name = a.get('name','')
-			lower = name.lower()
-			if q in lower or (q not in lower and q in name):
-				stream_id = str(a.get('stream_id',''))
-				thumb = (a.get('stream_icon','') or '').replace(r'\/', '/')
-				stream_type = (a.get('stream_type','') or '').replace(r'\/', '/')
-				container_extension = a.get('container_extension','mp4')
-				if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
-					if scope in ('all','vod') and 'movie' in stream_type:
-						results.append(('movie', name, play_movies+stream_id+'.'+container_extension, 4, thumb, background, ''))
-					if scope in ('all','live') and 'live' in stream_type:
-						results.append(('live', name, play_live+stream_id, 4, thumb, background, ''))
-	if scope in ('all','vod'):
-		# Search VOD (Movies)
-		# Prefer cached VOD catalog to avoid blocking UI; try network if cache miss
-		vod_data = tools.OPEN_URL_CACHED(vod_url, ttl_minutes=tools.CONTENT_CACHE_TTL_MOVIES)
-		if not vod_data:
-			vod_data = tools.OPEN_URL(vod_url)
-		if vod_data:
+			return False
+
+	def close_search_progress():
+		if progress_open:
 			try:
-				root = ET.fromstring(vod_data)
-				for ch in root.findall('.//channel'):
-					t = ch.findtext('title', default='')
-					name = str(tools.b64(t)).replace('?', '') if t else ''
-					if q in name.lower() or (q not in name.lower() and q in name):
-						playlist = ch.findtext('playlist_url')
-						thumb = ch.findtext('desc_image', default='')
-						if thumb:
-							thumb = thumb.replace('<![CDATA[','').replace(']]>','')
-						stream = ch.findtext('stream_url', default='')
-						url1 = tools.check_protocol((playlist or stream).replace('<![CDATA[','').replace(']]>',''))
-						desc_raw = ch.findtext('description', default='')
-						desc = tools.b64(desc_raw) if desc_raw else ''
-						if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
-							results.append(('vod', name, url1, 4, thumb or background, background, desc))
+				search_progress.close()
 			except Exception:
 				pass
-	if scope in ('all','series'):
-		# Search Series
-		series_endpoint = player_api + '&action=get_series'
-		series_data = tools.OPEN_URL_CACHED(series_endpoint, ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
-		if not series_data:
-			series_data = tools.OPEN_URL(series_endpoint)
-		if series_data:
+
+	def get_legacy_items():
+		"""Load legacy panel channels only when a standard catalog is empty."""
+		nonlocal legacy_items
+		if legacy_items is None:
+			legacy_items = _catalog_items(panel_api, tools.CONTENT_CACHE_TTL_TV)
+		return legacy_items
+
+	def legacy_streams(kind):
+		nonlocal search_cancelled
+		items = []
+		catalog = get_legacy_items()
+		total = max(1, len(catalog))
+		for index, item in enumerate(catalog):
+			if index % 500 == 0 and update_section(
+				kind, 0.10 + (0.15 * index / total), 'Preparing'):
+				search_cancelled = True
+				break
+			stream_type = str(item.get('stream_type') or '').casefold()
+			if kind == 'live' and 'live' in stream_type:
+				items.append(item)
+			elif kind == 'vod' and ('movie' in stream_type or 'vod' in stream_type):
+				items.append(item)
+		return items
+
+	def matches(item_name):
+		name_text = str(item_name or '')
+		if query not in name_text.casefold():
+			return False
+		if hide_adult and any(tag.casefold() in name_text.casefold() for tag in adult_tags):
+			return False
+		return True
+
+	if scope in ('live', 'all'):
+		if update_section('live', 0.0, 'Loading'):
+			close_search_progress()
+			return
+		live_items = _catalog_items(
+			player_api + '&action=get_live_streams', tools.CONTENT_CACHE_TTL_TV)
+		if not live_items:
+			# Several older XC panels expose streams only through panel_api.php.
+			live_items = legacy_streams('live')
+		if search_cancelled:
+			close_search_progress()
+			return
+		live_total = max(1, len(live_items))
+		for index, item in enumerate(live_items):
+			if index % 250 == 0 and update_section(
+				'live', 0.25 + (0.75 * index / live_total), 'Searching'):
+				search_cancelled = True
+				break
+			channel_name = str(item.get('name') or item.get('epg_channel_id') or '')
+			if not matches(channel_name):
+				continue
+			stream_id = str(item.get('stream_id') or '')
+			if not stream_id:
+				continue
+			thumb = str(item.get('stream_icon') or '').replace(r'\/', '/')
+			direct_source = str(item.get('direct_source') or '')
+			stream_url = direct_source if direct_source.startswith(('http://', 'https://')) else play_url + stream_id + '.ts'
+			results.append(('live', channel_name, stream_url, 4, thumb, background, ''))
 			try:
-				ser_cat = json.loads(series_data)
-				for ser in ser_cat:
-					name = ser.get('name','')
-					if q in name.lower() or (q not in name.lower() and q in name):
-						series_id = str(ser.get('series_id',''))
-						cover = ser.get('cover','')
-						results.append(('series', name, player_api+'&action=get_series_info&series_id='+series_id, 19, cover, background, ''))
-			except Exception:
-				pass
-	if scope in ('all','live'):
-		# Search Catch-up (if available)
-		catchup_raw = tools.OPEN_URL(panel_api)
-		if not catchup_raw:
-			catchup_raw = tools.OPEN_URL_CACHED(panel_api, ttl_minutes=1)
-		if catchup_raw:
-			try:
-				parse = json.loads(catchup_raw)
-				channels = parse.get('available_channels', {})
-				for key in channels:
-					a = channels[key]
-					if int(a.get('tv_archive', 0)) == 1:
-						name = (a.get('epg_channel_id','') or '').replace(r'\/', '/')
-						if q in name.lower() or (q not in name.lower() and q in name):
-							thumb = (a.get('stream_icon','') or '').replace(r'\/', '/')
-							sid = str(a.get('stream_id',''))
-							results.append(('catchup', name, 'url', 13, thumb, background, sid))
-			except Exception:
-				pass
+				has_archive = int(item.get('tv_archive') or 0) == 1
+			except (TypeError, ValueError):
+				has_archive = False
+			if has_archive:
+				results.append(('catchup', channel_name, 'url', 13, thumb, background, stream_id))
+		if search_cancelled:
+			close_search_progress()
+			return
+		update_section('live', 1.0, 'Finished')
+
+	if scope in ('vod', 'all'):
+		if update_section('vod', 0.0, 'Loading'):
+			close_search_progress()
+			return
+		vod_endpoint = player_api + '&action=get_vod_streams'
+		vod_items = _catalog_items(vod_endpoint, tools.CONTENT_CACHE_TTL_MOVIES)
+		if not vod_items:
+			# Some large XC panels intentionally return [] unless category_id is
+			# supplied.  Category 0 is their complete Movies/VOD catalog.
+			update_section('vod', 0.06, 'Loading full catalog for')
+			vod_items = _catalog_items(
+				vod_endpoint + '&category_id=0', tools.CONTENT_CACHE_TTL_MOVIES)
+		if not vod_items:
+			# A smaller group of legacy panels accepts the action only on
+			# panel_api.php.  Keep only its movie records because it may also
+			# include Live TV entries in the same response.
+			panel_vod_items = _catalog_items(
+				panel_api + '&action=get_vod_streams', tools.CONTENT_CACHE_TTL_MOVIES)
+			vod_items = [item for item in panel_vod_items
+				if str(item.get('stream_type') or '').casefold() in ('movie', 'vod')]
+		if not vod_items:
+			vod_items = legacy_streams('vod')
+		if search_cancelled:
+			close_search_progress()
+			return
+		vod_total = max(1, len(vod_items))
+		for index, item in enumerate(vod_items):
+			if index % 250 == 0 and update_section(
+				'vod', 0.25 + (0.75 * index / vod_total), 'Searching'):
+				search_cancelled = True
+				break
+			movie_name = str(item.get('name') or '')
+			if not matches(movie_name):
+				continue
+			stream_id = str(item.get('stream_id') or '')
+			if not stream_id:
+				continue
+			extension = str(item.get('container_extension') or 'mp4').lstrip('.')
+			thumb = str(item.get('stream_icon') or '').replace(r'\/', '/')
+			direct_source = str(item.get('direct_source') or '')
+			stream_url = direct_source if direct_source.startswith(('http://', 'https://')) else play_movies + stream_id + '.' + extension
+			description_text = str(item.get('plot') or item.get('description') or '')
+			results.append(('vod', movie_name, stream_url, 4, thumb, background, description_text))
+		if search_cancelled:
+			close_search_progress()
+			return
+		update_section('vod', 1.0, 'Finished')
+
+	if scope in ('series', 'all'):
+		if update_section('series', 0.0, 'Loading'):
+			close_search_progress()
+			return
+		series_items = _catalog_items(
+			player_api + '&action=get_series', tools.CONTENT_CACHE_TTL_SERIES)
+		series_total = max(1, len(series_items))
+		for index, item in enumerate(series_items):
+			if index % 250 == 0 and update_section(
+				'series', 0.15 + (0.85 * index / series_total), 'Searching'):
+				search_cancelled = True
+				break
+			series_name = str(item.get('name') or '')
+			if not matches(series_name):
+				continue
+			series_id = str(item.get('series_id') or '')
+			if not series_id:
+				continue
+			cover = str(item.get('cover') or item.get('stream_icon') or '')
+			results.append(('series', series_name,
+				player_api + '&action=get_series_info&series_id=' + series_id,
+				19, cover, background, str(item.get('plot') or '')))
+		if search_cancelled:
+			close_search_progress()
+			return
+		update_section('series', 1.0, 'Finished')
 
 	# Display all results
 	section_labels = {
@@ -460,7 +655,7 @@ def search():
 	}
 	# Log query and results counts, then normalize, de-duplicate and sort
 	try:
-		xbmc.log('IPTVXC: search requested q=%s' % q, LOG_NOTICE)
+		xbmc.log('IPTVXC: search requested q=%s' % query, LOG_NOTICE)
 		# raw count before de-duplication
 		raw_count = len(results)
 		seen = set()
@@ -474,12 +669,19 @@ def search():
 		type_priority = {'live': 0, 'movie': 1, 'vod': 2, 'series': 3, 'catchup': 4}
 		results.sort(key=lambda x: (type_priority.get(x[0], 99), (x[1] or '').lower()))
 		final_count = len(results)
-		xbmc.log('IPTVXC: search raw=%d final=%d q=%s' % (raw_count, final_count, q), LOG_NOTICE)
+		xbmc.log('IPTVXC: search raw=%d final=%d q=%s' % (raw_count, final_count, query), LOG_NOTICE)
 	except Exception:
 		# If dedupe/sort/logging fails for any reason, fall back to the original order
 		pass
 
-	for r in results:
+	result_total = max(1, len(results))
+	for result_index, r in enumerate(results):
+		if progress_open and result_index % 100 == 0:
+			try:
+				search_progress.update(90 + int(9 * result_index / result_total),
+					'Building %d search result(s)...' % len(results))
+			except Exception:
+				pass
 		# r = (type, name, url, mode, thumb, background, desc/sid)
 		label = section_labels.get(r[0], '') + r[1]
 		# Playable items: mode==4, isFolder=False
@@ -488,6 +690,15 @@ def search():
 		# Non-playable: keep original mode (series/catchup)
 		else:
 			tools.addDir(label, r[2], r[3], r[4], r[5], r[6])
+	if not results:
+		tools.addDir('[COLOR grey]No results found for "%s".[/COLOR]' % str(text),
+			'url', -1, iconsearch, background, '')
+	if progress_open:
+		try:
+			search_progress.update(100, 'Search complete')
+		except Exception:
+			pass
+	close_search_progress()
 ######
 ######
 
@@ -555,135 +766,59 @@ def tvarchive(name,description):
 def tvguide():
 		xbmc.executebuiltin('ActivateWindow(TVGuide)')
 
-def _playback_watchdog():
-	"""Background thread: dismiss busy dialogs when playback stops.
-
-	When the user presses X on a live IPTV stream, Kodi's FFmpeg demuxer
-	can block for 10-30 s trying to close the TCP connection.  During that
-	time Kodi shows a 'busydialog' that nothing ever closes, making the UI
-	appear frozen.  This watchdog detects the playing→stopped transition
-	and aggressively hammers Dialog.Close until the UI is responsive again.
-	"""
-	import threading
-	player = xbmc.Player()
+def _ensure_fullscreen_playback(player_obj):
+	"""Wait briefly for video and activate Kodi's fullscreen window."""
 	monitor = xbmc.Monitor()
-
-	# 1. Wait for playback to actually start (max 30 s)
-	started = False
-	for _ in range(60):
+	for _ in range(150):
 		if monitor.abortRequested():
-			return
-		if player.isPlaying():
-			started = True
-			break
-		xbmc.sleep(500)
-
-	if not started:
-		# Playback never began — clean up and leave
-		xbmc.executebuiltin('Dialog.Close(busydialog)')
-		xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
-		xbmc.log(f'{ADDON_ID}: watchdog – playback never started, exiting', LOG_NOTICE)
-		return
-
-	xbmc.log(f'{ADDON_ID}: watchdog – playback started, monitoring', LOG_NOTICE)
-
-	# 2. Wait until the player stops
-	while not monitor.abortRequested():
-		if not player.isPlaying():
-			break
-		xbmc.sleep(500)
-
-	xbmc.log(f'{ADDON_ID}: watchdog – playback stopped, dismissing busy dialogs', LOG_NOTICE)
-
-	# 3. Aggressively close busy dialogs for up to 10 s so the UI never
-	#    appears stuck while FFmpeg tears down the connection.
-	for _ in range(20):
-		if monitor.abortRequested():
-			return
-		xbmc.executebuiltin('Dialog.Close(busydialog)')
-		xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
-		xbmc.sleep(500)
-
-def _start_playback_watchdog():
-	"""Launch the playback watchdog in a daemon thread."""
-	import threading
-	t = threading.Thread(target=_playback_watchdog,
-						 name='IPTVXC-PlayWatchdog', daemon=True)
-	t.start()
-
-def apply_subtitles_for_playback(player_obj, url_arg, name_arg='', desc_arg=''):
-	"""
-	Spawn a short-lived thread that waits for playback to start and then
-	sets subtitle visibility according to addon settings per content type.
-	"""
-	try:
-		import threading
-	except Exception:
-		threading = None
-
-	def _worker():
-		startt = time.time()
-		while time.time() - startt < 30:
-			try:
-				if player_obj.isPlaying():
-					try:
-						cat = tools.classify_favorite(mode, url_arg, desc_arg or '', name_arg or '')
-					except Exception:
-						cat = 'live'
-					try:
-						if cat == 'series':
-							enabled = ADDON.getSetting('subtitles_series') == 'true'
-						elif cat == 'vod':
-							enabled = ADDON.getSetting('subtitles_vod') == 'true'
-						else:
-							enabled = ADDON.getSetting('subtitles_live') == 'true'
-					except Exception:
-						enabled = False
-					try:
-						player_obj.showSubtitles(bool(enabled))
-					except Exception as e:
-						try:
-							xbmc.log(f'{ADDON_ID}: apply_subtitles failed: {e}', LOG_NOTICE)
-						except Exception:
-							pass
-					break
-			except Exception:
-				pass
-			xbmc.sleep(500)
-
-	try:
-		if threading:
-			t = threading.Thread(target=_worker, daemon=True)
-			t.start()
-		else:
-			_worker()
-	except Exception:
+			return False
 		try:
-			_worker()
+			if player_obj.isPlayingVideo():
+				for _ in range(5):
+					if xbmc.getCondVisibility('Window.IsActive(fullscreenvideo)'):
+						return True
+					xbmc.executebuiltin('Dialog.Close(busydialog)')
+					xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
+					xbmc.executebuiltin('ActivateWindow(FullScreenVideo)')
+					xbmc.sleep(200)
+				return True
 		except Exception:
 			pass
+		xbmc.sleep(100)
+	return False
 
-def stream_video(url):
-	url = buildcleanurl(url)
-	# Log to history and save as last played
-	tools.add_to_history(url, name or '', iconimage or icon, description or '')
-	tools.save_last_played(url, name or '', iconimage or icon, description or '')
-	xbmc.log(f'{ADDON_ID}: stream_video() resolving URL: {url[:120]}', LOG_NOTICE)
-	# Try to get current programme info for the info overlay
-	now_title, now_desc = '', ''
+def apply_subtitles_for_playback(player_obj, url_arg, name_arg='', desc_arg=''):
+	"""Apply the configured subtitle visibility after playback starts."""
+	if not player_obj.isPlaying():
+		return
 	try:
-		# Extract stream_id from URL (last path segment)
-		sid = url.rstrip('/').split('/')[-1].split('.')[0]
-		if sid.isdigit():
-			now_title, now_desc = epg.get_now_playing(player_api, sid)
+		cat = tools.classify_favorite(mode, url_arg, desc_arg or '', name_arg or '')
 	except Exception:
-		pass
-	liz = xbmcgui.ListItem(path=str(url), offscreen=True)
-	liz.setArt({'icon': icon, 'thumb': icon})
-	display_title = now_title if now_title else (name or '')
-	display_desc = now_desc if now_desc else (description or '')
-	liz.setInfo(type='Video', infoLabels={'Title': display_title, 'Plot': display_desc, 'TVShowTitle': name or ''})
+		cat = 'live'
+	try:
+		setting_id = {'series': 'subtitles_series', 'vod': 'subtitles_vod'}.get(cat, 'subtitles_live')
+		player_obj.showSubtitles(ADDON.getSetting(setting_id) == 'true')
+	except Exception as e:
+		xbmc.log(f'{ADDON_ID}: apply_subtitles failed: {e}', LOG_NOTICE)
+
+def stream_video(url, playback_name=None, playback_icon=None, playback_description=None):
+	url = buildcleanurl(url)
+	item_name = _clean_playback_name(playback_name) if playback_name is not None else (name or '')
+	item_icon = playback_icon or iconimage or icon
+	item_description = playback_description if playback_description is not None else (description or '')
+	# Log to history and save as last played
+	tools.add_to_history(url, item_name, item_icon, item_description)
+	tools.save_last_played(url, item_name, item_icon, item_description)
+	xbmc.log(f'{ADDON_ID}: stream_video() resolving URL: {tools.redact_sensitive(url)[:120]}', LOG_NOTICE)
+	# This ListItem is handed directly to Kodi's player, so keep the default
+	# GUI locking behavior.  Using offscreen=True here can leave playback
+	# waiting for another GUI input before the video window is activated.
+	liz = xbmcgui.ListItem(path=str(url))
+	liz.setArt({'icon': item_icon, 'thumb': item_icon})
+	liz.setInfo(type='Video', infoLabels={'Title': item_name, 'Plot': item_description, 'TVShowTitle': item_name})
+	liz.setProperty('IsPlayable', 'true')
 	liz.setContentLookup(False)
+	# Resolve immediately; playback must never wait on an EPG request.
 	xbmcplugin.setResolvedUrl(int(sys.argv[1]), True, liz)
 	xbmc.log(f'{ADDON_ID}: stream_video() resolved OK', LOG_NOTICE)
 	# Force-close Kodi's busy dialog in case it lingers while the player
@@ -692,37 +827,14 @@ def stream_video(url):
 	xbmc.sleep(200)
 	xbmc.executebuiltin('Dialog.Close(busydialog)')
 	xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
-	# Start background watchdog (best-effort) and also keep this script
-	# alive for a short while.  By spinning in the main thread we can
-	# repeatedly close dialogs even if the addon process is terminated
-	# by Kodi shortly after resolving the URL.
-	_start_playback_watchdog()
-	# call the EPG updater
-	epg.start_epg_updater(player_api, url, name or '')
 	player = xbmc.Player()
-	# Ensure subtitles follow addon settings once playback actually starts
+	_ensure_fullscreen_playback(player)
+	# Apply subtitles once Kodi has opened the stream.  Do not leave resident
+	# worker threads behind in this short-lived plugin invocation.
 	try:
-		apply_subtitles_for_playback(player, url, name or '', description or '')
+		apply_subtitles_for_playback(player, url, item_name, item_description)
 	except Exception:
 		pass
-	# Wait for playback to actually start (up to 10 s), then exit as soon
-	# as it stops.  This prevents the invoker staying alive for the full
-	# 30-second guard window after the user presses X to stop.
-	start = time.time()
-	playback_started = False
-	while time.time() - start < 30:
-		if player.isPlaying():
-			playback_started = True
-		elif playback_started:
-			# Playback started and has now stopped — clean up and exit
-			xbmc.executebuiltin('Dialog.Close(busydialog)')
-			xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
-			break
-		elif time.time() - start > 10:
-			# Playback never started within 10 s — give up
-			break
-		# small delay prevents hogging CPU
-		xbmc.sleep(500)
 
 def searchdialog():
 	search = control.inputDialog(heading='Search '+ADDON_NAME+':')
@@ -913,6 +1025,7 @@ def accountinfo():
 			expiry = 'Unlimited'
 	username = str(user_info.get('username', ''))
 	password = str(user_info.get('password', ''))
+	masked_password = '•' * min(max(len(password), 4), 12) if password else 'Not supplied'
 	status = str(user_info.get('status', ''))
 	active_cons = str(user_info.get('active_cons', ''))
 	max_connections = str(user_info.get('max_connections', ''))
@@ -920,7 +1033,7 @@ def accountinfo():
 	external_ip = str(tools.getexternalip() or '')
 
 	tools.addDir('[B][COLOR white]Username :[/COLOR][/B] ' + username, '', '', icon, background, '')
-	tools.addDir('[B][COLOR white]Password :[/COLOR][/B] ' + password, '', '', icon, background, '')
+	tools.addDir('[B][COLOR white]Password :[/COLOR][/B] ' + masked_password, '', '', icon, background, '')
 	tools.addDir('[B][COLOR white]Expiry Date:[/COLOR][/B] ' + expiry, '', '', icon, background, '')
 	tools.addDir('[B][COLOR white]Account Status :[/COLOR][/B] %s' % status, '', '', icon, background, '')
 	tools.addDir('[B][COLOR white]Current Connections:[/COLOR][/B] ' + active_cons, '', '', icon, background, '')
@@ -1132,7 +1245,7 @@ def history_list():
 				ago = '%dh ago' % (delta // 3600)
 			else:
 				ago = '%dd ago' % (delta // 86400)
-		channel_name = item.get('name', '')
+		channel_name = _clean_playback_name(item.get('name', ''))
 		if ago:
 			label = '[COLOR grey]%s[/COLOR]  %s' % (ago, channel_name)
 		else:
@@ -1216,23 +1329,14 @@ try:
 except:
 	tmdb_id=''
 
+run_expiry_check = False
+
 if mode==None:
 	home()
-	# Check account expiry on addon launch and optionally start background checks
-	try:
-		# Non-blocking notification (silently ignore errors)
-		try:
-			tools.notify_account_expiry()
-		except Exception:
-			pass
-		# Start background worker if enabled in settings
-		try:
-			if ADDON.getSetting('expiry_notify_background') == 'true':
-				tools.start_expiry_background_check()
-		except Exception:
-			pass
-	except Exception:
-		pass
+	# Complete the directory first, then perform at most one expiry request
+	# per configured interval.  This keeps home navigation responsive and
+	# avoids a long-lived thread in Kodi's plugin process.
+	run_expiry_check = True
 
 elif mode==1:
 	livecategory()
@@ -1268,7 +1372,7 @@ elif mode==9:
 	username = addon.getSetting('Username')
 	password = addon.getSetting('Password')
 	base_url = addon.getSetting('DNS')
-	xbmc.log(f'IPTVXC: Settings - DNS={base_url}, Username={username}, Password={password}', LOG_NOTICE)
+	xbmc.log('IPTVXC: Credential test requested for %s' % tools.redact_sensitive(base_url), LOG_NOTICE)
 	if not (username and password and base_url):
 		xbmc.log('IPTVXC: Missing credentials', LOG_NOTICE)
 		xbmcgui.Dialog().ok('Test Credentials', 'Please enter DNS, Username, and Password in settings.')
@@ -1398,49 +1502,30 @@ elif mode==37:
 		tools.add_to_history(stream_url, ch_name or '', ch_icon or icon, '')
 		tools.save_last_played(stream_url, ch_name or '', ch_icon or icon, '')
 		display_title = now_title if now_title else (ch_name or '')
-		liz = xbmcgui.ListItem(path=str(stream_url), offscreen=True)
+		liz = xbmcgui.ListItem(path=str(stream_url))
 		liz.setArt({'icon': ch_icon or icon, 'thumb': ch_icon or icon})
 		liz.setInfo(type='Video', infoLabels={'Title': display_title, 'Plot': now_desc, 'TVShowTitle': ch_name or ''})
+		liz.setProperty('IsPlayable', 'true')
 		liz.setContentLookup(False)
 		player = xbmc.Player()
 		player.play(stream_url, liz)
+		_ensure_fullscreen_playback(player)
 		try:
 			apply_subtitles_for_playback(player, stream_url, ch_name or '', now_desc)
 		except Exception:
 			pass
-		epg.start_epg_updater(player_api, stream_url, ch_name or '')
 		xbmc.sleep(200)
 		xbmc.executebuiltin('Dialog.Close(busydialog)')
 		xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
 
 elif mode==35:
-	# "Last Played" — just play the channel directly (it's live, show info is stale)
-	play_url = buildcleanurl(url)
-	tools.add_to_history(play_url, name or '', iconimage or icon, '')
-	tools.save_last_played(play_url, name or '', iconimage or icon, '')
-	# Fetch current programme info for info overlay
-	now_title, now_desc = '', ''
-	try:
-		sid = play_url.rstrip('/').split('/')[-1].split('.')[0]
-		if sid.isdigit():
-			now_title, now_desc = epg.get_now_playing(player_api, sid)
-	except Exception:
-		pass
-	display_title = now_title if now_title else (name or '')
-	liz = xbmcgui.ListItem(path=str(play_url), offscreen=True)
-	liz.setArt({'icon': icon, 'thumb': icon})
-	liz.setInfo(type='Video', infoLabels={'Title': display_title, 'Plot': now_desc, 'TVShowTitle': name or ''})
-	liz.setContentLookup(False)
-	player = xbmc.Player()
-	player.play(play_url, liz)
-	try:
-		apply_subtitles_for_playback(player, play_url, name or '', now_desc)
-	except Exception:
-		pass
-	epg.start_epg_updater(player_api, play_url, name or '')
-	xbmc.sleep(200)
-	xbmc.executebuiltin('Dialog.Close(busydialog)')
-	xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
+	# Last Played / history uses Kodi's normal playable-item resolver just
+	# like every other stream.  Starting Player.play() from a folder route
+	# left Kodi waiting for a directory response and caused focus glitches.
+	playback_name = _clean_playback_name(name)
+	stream_video(url, playback_name=playback_name,
+				 playback_icon=iconimage or icon,
+				 playback_description=description or '')
 
 
 elif mode=='start':
@@ -1453,3 +1538,6 @@ if mode not in (4, 31, 35, 37):
 	except Exception:
 		pass
 	xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+if run_expiry_check:
+	tools.notify_account_expiry_throttled()

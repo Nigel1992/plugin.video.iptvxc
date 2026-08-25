@@ -1,4 +1,4 @@
-# Version 3.8.8 (2026-08-25)
+# Version 3.8.8 (2026-08-26)
 
 ### 🔎 Search and navigation
 - Fixed issue #2: Search now queries the actual Xtream `get_live_streams`, `get_vod_streams`, and `get_series` catalogs instead of mixing incompatible legacy panel data with a VOD category feed.
@@ -8,6 +8,13 @@
 - Added a cancellable search progress window with the current section and overall percentage while catalogs are loaded, scanned, and results are built.
 - The active scope/query is retained until the user returns to the main menu, so stopping playback rebuilds the same results without reopening the selector and keyboard.
 - Added an explicit "No results found" entry instead of a generic add-on error.
+
+### 📺 Live TV and EPG
+- Fixed channel names becoming ambiguous or disappearing when an Enigma2 panel appends the current EPG schedule and programme title to each channel label.
+- EPG-decorated Live TV listings now resolve canonical channel names from the matching Xtream category, with a safe title-prefix fallback for legacy panels.
+- Programme titles and descriptions remain available as EPG/plot information without replacing the visible channel name.
+- Generated PVR M3U entries now use the real channel name for `tvg-name` and the visible label, while retaining `epg_channel_id` for `tvg-id` matching.
+- Removed malformed duplicate `channel-id` attributes from generated M3U entries.
 
 ### ▶️ Playback and navigation
 - Fixed Last Played and Recently Watched items being registered as folders while starting playback directly, which caused Kodi `GetDirectory` errors and intermittent focus/input waits.

@@ -134,10 +134,11 @@ A huge thank you to the supporters who have contributed to charity through this 
 
 ## 📝 Release History
 
-### Version 3.8.8 (2026-08-25)
+### Version 3.8.8 (2026-08-26)
 - **Search:** rebuilt around real Xtream catalogs, including list/dictionary responses, category-aware VOD requests, and legacy panel fallbacks.
 - **Search progress:** shows the current section and overall percentage while scanning, and can be cancelled.
 - **Search navigation:** stopping playback returns to the same results; returning to the main menu resets Search for a fresh query.
+- **Live TV/EPG:** canonical channel names stay visible when programme data is present; generated PVR playlists now use the real channel name for `tvg-name`.
 - **Playback:** fixed Last Played/history route errors, standardized Kodi resolver playback, automatic fullscreen startup, and recurring Last Played labels.
 - **Responsiveness:** removed resident plugin threads that could hold Kodi invocations open.
 - **Cache:** confirmation now happens before deletion and a detailed result is always shown.

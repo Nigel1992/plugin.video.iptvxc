@@ -595,6 +595,20 @@ def killxbmc():
 	else:
 		home()
 
+def _m3u_attribute(value):
+	"""Return a single-line, quote-safe M3U attribute value."""
+	return str(value or '').replace('\r', ' ').replace('\n', ' ').replace('"', "'").strip()
+
+def _m3u_live_entry(channel_number, channel):
+	"""Build an EXTINF line while preserving the real channel name."""
+	name = _m3u_attribute(channel.get('name', '')) or 'Unknown Channel'
+	epg_id = _m3u_attribute(channel.get('epg_channel_id', '')) or name
+	logo = _m3u_attribute(channel.get('stream_icon', ''))
+	group = _m3u_attribute(channel.get('category_name', ''))
+	return ('#EXTINF:-1 tvg-chno="{0}" tvg-id="{1}" tvg-name="{2}" '
+		'tvg-logo="{3}" group-title="{4}",{5}').format(
+		channel_number, epg_id, name, logo, group, name)
+
 def gen_m3u(url, path):
 	parse = json.loads(OPEN_URL(url))
 	i=1
@@ -606,7 +620,7 @@ def gen_m3u(url, path):
 			
 			if a['stream_type'] == 'live':
 				
-				b = '#EXTINF:-1 channel-id="{0}" tvg-id="{1}" tvg-name="{2}" tvg-logo="{3}" channel-id="{4}" group-title="{5}",{6}'.format(i, a['epg_channel_id'], a['epg_channel_id'], a['stream_icon'], a['name'], a['category_name'], a['name'])
+				b = _m3u_live_entry(i, a)
 				
 				if parse['server_info']['server_protocol'] == 'https':
 					port = parse['server_info']['https_port']
@@ -619,7 +633,7 @@ def gen_m3u(url, path):
 				i +=1
 				DP.update(int(100), 'Found Channel \n' + a['name'] + '\n')
 				if DP.iscanceled(): break
-		DP.close
+		DP.close()
 		DIALOG.ok(ADDON_NAME, 'Found ' + str(i) + ' Channels')
 
 def gen_m3u_silent(url, path):
@@ -634,9 +648,7 @@ def gen_m3u_silent(url, path):
 		for items in parse.get('available_channels', {}):
 			a = parse['available_channels'][items]
 			if a.get('stream_type') == 'live':
-				b = '#EXTINF:-1 channel-id="{0}" tvg-id="{1}" tvg-name="{2}" tvg-logo="{3}" channel-id="{4}" group-title="{5}",{6}'.format(
-					i, a.get('epg_channel_id',''), a.get('epg_channel_id',''), a.get('stream_icon',''),
-					a.get('name',''), a.get('category_name',''), a.get('name',''))
+				b = _m3u_live_entry(i, a)
 				if parse['server_info']['server_protocol'] == 'https':
 					port = parse['server_info']['https_port']
 				else:

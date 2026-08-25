@@ -239,6 +239,25 @@ def livecategory():
 		if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):
 			tools.addDir('%s' % name, url2, 2, icon, background if hidexxx else live, '')
 
+_LIVE_EPG_SUFFIX = re.compile(
+	r'\s*\[\s*\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}\s*\]'
+	r'\s*(?:\+\s*[\d.,]+\s*min)?(?:\s+.*)?$', re.IGNORECASE)
+
+def _live_stream_id(stream_url):
+	"""Extract an Xtream stream ID from a Live TV URL."""
+	try:
+		filename = urllib.parse.urlparse(str(stream_url)).path.rstrip('/').rsplit('/', 1)[-1]
+		stream_id = filename.split('.', 1)[0]
+		return stream_id if stream_id.isdigit() else ''
+	except Exception:
+		return ''
+
+def _stable_live_channel_name(provider_title):
+	"""Remove the provider-appended EPG schedule/programme from a label."""
+	text = str(provider_title or '').strip()
+	channel_name = _LIVE_EPG_SUFFIX.sub('', text).strip(' -\t')
+	return channel_name or text or 'Unknown Channel'
+
 def Livelist(url):
 	url  = buildcleanurl(url)
 	data = tools.OPEN_URL_CACHED(url, ttl_minutes=tools.CONTENT_CACHE_TTL_TV)
@@ -249,11 +268,34 @@ def Livelist(url):
 		root = ET.fromstring(data)
 	except Exception:
 		return
-	for ch in root.findall('.//channel'):
+	channels = root.findall('.//channel')
+
+	# Enigma2 feeds often append "[start - stop] + n min Programme" to the
+	# channel title.  Resolve the canonical names from the category's Xtream
+	# catalog so channel labels never turn into programme titles when EPG is
+	# available.  The title-prefix parser below remains the offline fallback.
+	canonical_names = {}
+	contains_epg_titles = any(_LIVE_EPG_SUFFIX.search(
+		tools.b64(ch.findtext('title', default=''))) for ch in channels)
+	if contains_epg_titles:
+		category_id = next((str(ch.findtext('category_id', default='')).strip()
+			for ch in channels if str(ch.findtext('category_id', default='')).strip()), '')
+		if category_id:
+			catalog_url = (player_api + '&action=get_live_streams&category_id=' +
+				urllib.parse.quote_plus(category_id))
+			for item in _catalog_items(catalog_url, tools.CONTENT_CACHE_TTL_TV):
+				stream_id = str(item.get('stream_id') or '')
+				channel_name = str(item.get('name') or '').strip()
+				if stream_id and channel_name:
+					canonical_names[stream_id] = channel_name
+
+	for ch in channels:
 		t = ch.findtext('title', default='')
-		ch_name = re.sub(r'\[.*?min ', '-', tools.b64(t)) if t else ''
+		provider_title = tools.b64(t) if t else ''
 		s = ch.findtext('stream_url', default='')
 		url1 = tools.check_protocol(s).replace('<![CDATA[','').replace(']]>','')
+		stream_id = _live_stream_id(url1)
+		ch_name = canonical_names.get(stream_id) or _stable_live_channel_name(provider_title)
 		thumb = ch.findtext('desc_image', default='')
 		if thumb:
 			thumb = thumb.replace('<![CDATA[ ','').replace(' ]]>','')

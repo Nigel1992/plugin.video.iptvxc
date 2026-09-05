@@ -71,7 +71,8 @@ jobs:
           
           
           def main():
-              event = json.load(open(os.environ['GITHUB_EVENT_PATH']))
+              with open(os.environ['GITHUB_EVENT_PATH']) as event_file:
+                  event = json.load(event_file)
               if os.environ['GITHUB_EVENT_NAME'] == 'workflow_dispatch':
                   assert classify('This code has bugs. Please add tests. I disagree with using AI to implement it.') == '[OK]', 'Constructive criticism test failed'
                   assert classify('You are a worthless idiot and an incompetent moron.') == '[FLAGGED]', 'Personal abuse test failed'
@@ -83,7 +84,7 @@ jobs:
               if subject.get('user', {}).get('type') == 'Bot':
                   print('Skipping bot content')
                   return
-              if issue.get('title') == 'Community & Conduct' and issue.get('user', {}).get('login') == os.environ['GITHUB_REPOSITORY'].split('/')[0]:
+              if 'comment' not in event and issue.get('title') == 'Community & Conduct' and issue.get('user', {}).get('login') == os.environ['GITHUB_REPOSITORY'].split('/')[0]:
                   print('Skipping owner conduct announcement')
                   return
               text = subject.get('body') or ''

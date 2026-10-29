@@ -9,6 +9,8 @@
 
 # **XCUI Streams** ### *plugin.video.iptvxc*
 
+[![Vibe Coded](https://img.shields.io/badge/Vibe_Coded-✨-8A2BE2?style=for-the-badge)](https://github.com)
+
 **High-performance XC / XCUI playback for Kodi** Live TV • VOD • Catch-up • TV Series  
 Optimized for **Kodi v21 (Omega)** & **Python 3**
 

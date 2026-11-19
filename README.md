@@ -203,7 +203,15 @@ A huge thank you to the supporters who have contributed to charity through this 
 
 ---
 
-## 📊 Usage statistics (opt-in)
+## 📊 Usage statistics
+
+![Total Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstalls&query=%24.value&label=Total%20Installs&color=brightgreen)
+![Daily Active](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Fdaily&query=%24.value&label=Daily%20Active&color=blue)
+
+- Total installs and daily active counts are tracked via an anonymous opt-out ping (enabled by default).
+- Raw counters: [installs](https://abacus.jasoncameron.dev/get/iptvxc/installs) · [daily](https://abacus.jasoncameron.dev/get/iptvxc/daily)
+
+## 🔒 Privacy & opt-out
 
 XCUI Streams can send a single anonymous usage ping per install to help the maintainer gauge adoption. It is **enabled by default** (opt-out).
 

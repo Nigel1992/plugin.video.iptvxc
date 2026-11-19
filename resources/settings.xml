@@ -29,7 +29,8 @@
 	<category label="Features">
 		<setting id="max_history_items" type="number" label="Max items in watch history" default="25" />
 		<setting id="telemetry_enabled" type="bool" label="Send anonymous usage ping (opt-out)" default="true" />
-		<setting id="telemetry_endpoint" type="text" label="Telemetry endpoint (counter URL)" default="https://abacus.jasoncameron.dev/hit/iptvxc/installs" />
+		<setting id="telemetry_endpoint" type="text" label="Telemetry endpoint (installs counter URL)" default="https://abacus.jasoncameron.dev/hit/iptvxc/installs" />
+		<setting id="telemetry_daily_endpoint" type="text" label="Telemetry daily endpoint (daily counter URL)" default="https://abacus.jasoncameron.dev/hit/iptvxc/daily" />
 	</category>
 	<category label="Playback">
 		<setting id="subtitles_live" type="bool" label="Enable subtitles for Live TV" default="false" />

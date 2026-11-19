@@ -184,12 +184,13 @@ def _clear_search_state():
 		pass
 
 def _telemetry_ping():
-	"""Send a single anonymous opt-in usage ping per install (no PII)."""
+	"""Send anonymous opt-in usage pings (no PII).
+
+	- One ping per install to the "installs" counter (total installs).
+	- One ping per day per install to the "daily" counter (daily active).
+	"""
 	try:
 		if ADDON.getSetting('telemetry_enabled') != 'true':
-			return
-		flag_path = os.path.join(ADDONDATA, 'telemetry_pinged')
-		if os.path.exists(flag_path):
 			return
 		os.makedirs(ADDONDATA, exist_ok=True)
 		# Store a random anonymous install ID locally (never sent).
@@ -198,18 +199,41 @@ def _telemetry_ping():
 			import uuid
 			with open(id_path, 'w', encoding='utf-8') as id_file:
 				id_file.write(uuid.uuid4().hex)
-		endpoint = (ADDON.getSetting('telemetry_endpoint') or '').strip()
-		if not endpoint:
-			endpoint = 'https://abacus.jasoncameron.dev/hit/iptvxc/installs'
+
+		installs_endpoint = (ADDON.getSetting('telemetry_endpoint') or '').strip()
+		if not installs_endpoint:
+			installs_endpoint = 'https://abacus.jasoncameron.dev/hit/iptvxc/installs'
+		daily_endpoint = (ADDON.getSetting('telemetry_daily_endpoint') or '').strip()
+		if not daily_endpoint:
+			daily_endpoint = 'https://abacus.jasoncameron.dev/hit/iptvxc/daily'
+
+		# Total installs: ping once per install.
+		installed_flag = os.path.join(ADDONDATA, 'telemetry_installed')
+		if not os.path.exists(installed_flag):
+			try:
+				urllib.request.urlopen(installs_endpoint, timeout=3).read()
+				with open(installed_flag, 'w', encoding='utf-8') as f:
+					f.write(str(time.time()))
+			except Exception:
+				pass
+
+		# Daily active: ping once per day per install.
+		last_daily_path = os.path.join(ADDONDATA, 'telemetry_last_daily')
+		today = time.strftime('%Y-%m-%d')
+		last_daily = ''
 		try:
-			urllib.request.urlopen(endpoint, timeout=3).read()
+			if os.path.exists(last_daily_path):
+				with open(last_daily_path, 'r', encoding='utf-8') as f:
+					last_daily = f.read().strip()
 		except Exception:
-			return
-		try:
-			with open(flag_path, 'w', encoding='utf-8') as flag_file:
-				flag_file.write(str(time.time()))
-		except Exception:
-			pass
+			last_daily = ''
+		if last_daily != today:
+			try:
+				urllib.request.urlopen(daily_endpoint, timeout=3).read()
+				with open(last_daily_path, 'w', encoding='utf-8') as f:
+					f.write(today)
+			except Exception:
+				pass
 	except Exception:
 		pass
 

@@ -28,7 +28,7 @@
 	</category>
 	<category label="Features">
 		<setting id="max_history_items" type="number" label="Max items in watch history" default="25" />
-		<setting id="telemetry_enabled" type="bool" label="Send anonymous usage ping (opt-in)" default="false" />
+		<setting id="telemetry_enabled" type="bool" label="Send anonymous usage ping (opt-out)" default="true" />
 		<setting id="telemetry_endpoint" type="text" label="Telemetry endpoint (counter URL)" default="https://abacus.jasoncameron.dev/hit/iptvxc/installs" />
 	</category>
 	<category label="Playback">

@@ -29,6 +29,19 @@ Optimized for **Kodi v21 (Omega)** & **Python 3**
 
 **Quick links:** [Latest release](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest) · [Installation](#-installation) · [Troubleshooting](#%EF%B8%8F-troubleshooting) · [Issues](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
 
+## 📊 Usage statistics
+
+
+![Total Downloads (all releases)](https://img.shields.io/github/downloads/Nigel1992/plugin.video.iptvxc/total?label=Total%20Downloads&color=brightgreen&style=for-the-badge)
+![Telemetry Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstalls&query=%24.value&label=Telemetry%20Installs&color=blue&style=for-the-badge)
+![Today%27s%20Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstall-2026-11-19&query=%24.value&label=Today%27s%20Installs&color=orange&style=for-the-badge)
+![Today%27s%20Active](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Factive-2026-11-19&query=%24.value&label=Today%27s%20Active&color=blue&style=for-the-badge)
+![Daily Active (Cumulative)](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Fdaily&query=%24.value&label=Daily%20Active%20(Cumulative)&color=lightgrey&style=for-the-badge)
+
+- Total installs and daily active counts are tracked via an anonymous opt-out ping (enabled by default).
+- Raw counters: [installs](https://abacus.jasoncameron.dev/get/iptvxc/installs) · [daily](https://abacus.jasoncameron.dev/get/iptvxc/daily)
+
+
 ## 🚀 Overview
 
 Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing, caching, and clean navigation.
@@ -200,18 +213,6 @@ A huge thank you to the supporters who have contributed to charity through this 
 - **Provider differences:** Not all providers share the same API structure; open an issue with your host name if something breaks.
 
 ---
-
-## 📊 Usage statistics
-
-
-![Total Downloads (all releases)](https://img.shields.io/github/downloads/Nigel1992/plugin.video.iptvxc/total?label=Total%20Downloads&color=brightgreen&style=for-the-badge)
-![Telemetry Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstalls&query=%24.value&label=Telemetry%20Installs&color=blue&style=for-the-badge)
-![Today%27s%20Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstall-2026-11-19&query=%24.value&label=Today%27s%20Installs&color=orange&style=for-the-badge)
-![Today%27s%20Active](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Factive-2026-11-19&query=%24.value&label=Today%27s%20Active&color=blue&style=for-the-badge)
-![Daily Active (Cumulative)](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Fdaily&query=%24.value&label=Daily%20Active%20(Cumulative)&color=lightgrey&style=for-the-badge)
-
-- Total installs and daily active counts are tracked via an anonymous opt-out ping (enabled by default).
-- Raw counters: [installs](https://abacus.jasoncameron.dev/get/iptvxc/installs) · [daily](https://abacus.jasoncameron.dev/get/iptvxc/daily)
 
 ## 🔒 Privacy & opt-out
 

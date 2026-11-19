@@ -187,6 +187,11 @@ def home():
 	# Reaching the main menu ends the prior search session.  Until then its
 	# scope/query remain available so Kodi can rebuild results after playback.
 	_clear_search_state()
+	# Prompt for subscription details if they are missing so search/catchup
+	# are never attempted against an unconfigured account.
+	if not _credentials_ready():
+		tools.addDir('[COLOR red][B]⚠ Enter subscription details (Settings)[/B][/COLOR]',
+			'AS', 10, iconsettings, background, '')
 	# Last Played quick access
 	last = tools.load_last_played()
 	if last and last.get('url'):
@@ -471,10 +476,33 @@ def _catalog_items(endpoint, ttl_minutes):
 			ADDON_ID, tools.redact_sensitive(endpoint), tools.redact_sensitive(exc)), LOG_NOTICE)
 	return []
 
+def _credentials_ready():
+	"""Return True when DNS/Username/Password are all configured."""
+	try:
+		dns_val = control.setting('DNS')
+		user_val = control.setting('Username')
+		pass_val = control.setting('Password')
+	except Exception:
+		return False
+	return bool(str(dns_val or '').strip() and str(user_val or '').strip() and str(pass_val or '').strip())
+
+
 def search():
 	# Search the actual Xtream catalogs.  The former implementation mixed a
 	# legacy panel dictionary with a VOD category feed and crashed when a
 	# provider returned the standard list-shaped response.
+	if not _credentials_ready():
+		try:
+			xbmcplugin.setPluginCategory(int(sys.argv[1]), 'Search')
+		except Exception:
+			pass
+		tools.addDir('[COLOR red]Please enter DNS, Username and Password in Settings first.[/COLOR]',
+			'url', -1, iconsearch, background, '')
+		try:
+			xbmcplugin.endOfDirectory(int(sys.argv[1]))
+		except Exception:
+			pass
+		return
 	valid_scopes = ('live', 'vod', 'series', 'all')
 	stored_scope = urllib.parse.unquote_plus(str(params.get('scope', ''))).lower()
 	stored_query = urllib.parse.unquote_plus(str(params.get('query', ''))).strip()
@@ -484,22 +512,22 @@ def search():
 		scope = stored_scope
 		text = stored_query
 	else:
-		active_search = _load_search_state()
-		active_scope = str(active_search.get('scope') or '').lower()
-		active_query = str(active_search.get('query') or '').strip()
-		if active_scope in valid_scopes and active_query:
-			scope = active_scope
-			text = active_query
-		else:
-			scope_items = ['Live TV & Catchup', 'Movies/VOD', 'Series', 'All sections']
-			choice = DIALOG.select('Search in', scope_items)
-			if choice < 0:
-				return
-			scope = valid_scopes[choice]
-			text = searchdialog()
-			if not text:
-				return
-	_save_search_state(scope, text)
+		# Always prompt for a fresh search when Search is opened from the
+		# menu.  Do NOT reuse a sidecar/previous search here, otherwise
+		# clicking Search auto-runs the last query (issue #7).
+		scope_items = ['Live TV & Catchup', 'Movies/VOD', 'Series', 'All sections']
+		choice = DIALOG.select('Search in', scope_items)
+		if choice < 0:
+			return
+		scope = valid_scopes[choice]
+		text = searchdialog()
+		if not text:
+			return
+		result_url = 'plugin://%s/?%s' % (ADDON_ID, urllib.parse.urlencode({
+			'mode': '5', 'scope': scope, 'query': text,
+		}))
+		xbmc.executebuiltin('Container.Update(%s,replace)' % result_url)
+		return
 	query = str(text).strip().casefold()
 	try:
 		xbmcplugin.setPluginCategory(int(sys.argv[1]), 'Search results: %s' % str(text))
@@ -509,6 +537,7 @@ def search():
 	results = []
 	legacy_items = None
 	search_cancelled = False
+	searched_total = 0
 	active_sections = [name for name in ('live', 'vod', 'series')
 		if scope in (name, 'all')]
 	section_names = {'live': 'Live TV & Catch-up', 'vod': 'Movies/VOD', 'series': 'Series'}
@@ -585,6 +614,7 @@ def search():
 		if search_cancelled:
 			close_search_progress()
 			return
+		searched_total += len(live_items)
 		live_total = max(1, len(live_items))
 		for index, item in enumerate(live_items):
 			if index % 250 == 0 and update_section(
@@ -637,6 +667,7 @@ def search():
 		if search_cancelled:
 			close_search_progress()
 			return
+		searched_total += len(vod_items)
 		vod_total = max(1, len(vod_items))
 		for index, item in enumerate(vod_items):
 			if index % 250 == 0 and update_section(
@@ -666,6 +697,7 @@ def search():
 			return
 		series_items = _catalog_items(
 			player_api + '&action=get_series', tools.CONTENT_CACHE_TTL_SERIES)
+		searched_total += len(series_items)
 		series_total = max(1, len(series_items))
 		for index, item in enumerate(series_items):
 			if index % 250 == 0 and update_section(
@@ -733,11 +765,15 @@ def search():
 		else:
 			tools.addDir(label, r[2], r[3], r[4], r[5], r[6])
 	if not results:
-		tools.addDir('[COLOR grey]No results found for "%s".[/COLOR]' % str(text),
-			'url', -1, iconsearch, background, '')
+		if searched_total == 0:
+			tools.addDir('[COLOR red]No subscription data loaded. Check credentials or Clear Cache.[/COLOR]',
+				'url', -1, iconsearch, background, '')
+		else:
+			tools.addDir('[COLOR grey]No results found for "%s" (searched %d items).[/COLOR]' % (str(text), searched_total),
+				'url', -1, iconsearch, background, '')
 	if progress_open:
 		try:
-			search_progress.update(100, 'Search complete')
+			search_progress.update(100, 'Search complete: %d result(s)' % len(results))
 		except Exception:
 			pass
 	close_search_progress()
@@ -750,12 +786,17 @@ def catchup():
 def listcatchup():
 	raw = tools.OPEN_URL_CACHED(panel_api, ttl_minutes=tools.CONTENT_CACHE_TTL_TV)
 	if not raw:
+		tools.addDir('[COLOR grey]No catch-up data loaded. Check credentials or Clear Cache.[/COLOR]',
+			'url', -1, iconcatchup, background, '')
 		return
 	try:
 		parse = json.loads(raw)
 	except Exception:
+		tools.addDir('[COLOR grey]Unable to parse catch-up data. Check credentials.[/COLOR]',
+			'url', -1, iconcatchup, background, '')
 		return
 	channels = parse.get('available_channels', {})
+	count = 0
 	for key in channels:
 		a = channels[key]
 		if int(a.get('tv_archive', 0)) == 1:
@@ -764,6 +805,10 @@ def listcatchup():
 			sid = str(a.get('stream_id',''))
 			if name:
 				tools.addDir(name, 'url', 13, thumb, background, sid)
+				count += 1
+	if count == 0:
+		tools.addDir('[COLOR grey]No catch-up channels found (subscription may not be loaded).[/COLOR]',
+			'url', -1, iconcatchup, background, '')
 
 def tvarchive(name,description):
 	days = 7
@@ -897,6 +942,7 @@ def settingsmenu():
 	else:
 		xxx = '[B][COLOR red]OFF[/COLOR][/B]'
 	tools.addDir('Switch Server','url',34,icon,background,'')
+	tools.addDir('Reload Subscription Data','reloadsub',10,icon,background,'')
 	tools.addDir('Edit Advanced Settings','ADS',10,icon,background,'')
 	tools.addDir('META is %s'%META,'META',10,icon,background,META)
 	tools.addDir('Hide Adult Content is %s'%xxx,'XXX',10,icon,background,xxx)
@@ -906,6 +952,12 @@ def addonsettings(url,description):
 	url	 = buildcleanurl(url)
 	if	 url =="clearcache":
 		tools.clear_cache()
+	elif url =="reloadsub":
+		tools.clear_cache()
+		try:
+			tools.LogNotify(ADDON_NAME, 'Subscription data reloaded')
+		except Exception:
+			pass
 	elif url =="AS":
 		xbmc.executebuiltin('Addon.OpenSettings(%s)'% ADDON_ID)
 	elif url =="ADS":
@@ -1212,6 +1264,7 @@ def extras():
 	tools.addDir('[COLOR red][B]Clear Watch History[/B][/COLOR]','clear_history',33,icon,background,'')
 	tools.addDir('[COLOR FF42A5F5]TV Guide[/COLOR]','epg',37,icon,background,'')
 	tools.addDir('Clear Cache','clearcache',10,icon,background,'')
+	tools.addDir('Reload Subscription Data','reloadsub',10,icon,background,'')
 
 def favorites_list():
 	favs = tools.load_favorites()

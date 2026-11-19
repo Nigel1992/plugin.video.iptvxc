@@ -1,3 +1,13 @@
+# Version 3.8.9 (2026-08-27)
+
+### 🔎 Search and subscription readiness
+- Fixed issue #7: Search no longer auto-runs the previous query when opened from the menu; it always prompts for a new scope/query.
+- Fixed issue #8: validates DNS/Username/Password before searching and reports when no subscription data is loaded.
+- Search results now report how many items were searched and how many matched; progress shows final result count.
+- Catch-up TV shows explicit empty/error states instead of a blank list.
+- Added "Reload Subscription Data" action (clears cache) in Settings and Extras.
+- Home screen shows a setup prompt when subscription details are missing.
+
 # Version 3.8.8 (2026-08-26)
 
 ### 🔎 Search and navigation

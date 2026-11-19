@@ -205,7 +205,6 @@ A huge thank you to the supporters who have contributed to charity through this 
 
 ## 📊 Usage statistics
 
-![Usage chart](stats/chart.png)
 
 ![Total Downloads (all releases)](https://img.shields.io/github/downloads/Nigel1992/plugin.video.iptvxc/total?label=Total%20Downloads&color=brightgreen)
 ![Telemetry Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstalls&query=%24.value&label=Telemetry%20Installs&color=blue)

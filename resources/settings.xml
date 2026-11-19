@@ -10,7 +10,7 @@
 		<setting label="Test Credentials" type="action" action="RunPlugin(plugin://plugin.video.iptvxc/?mode=9)" option="close" />
 	</category>
 	<category label="Network">
-		<setting id="net_timeout" type="number" label="Network timeout (seconds) — per-request timeout before retry" default="3" />
+		<setting id="net_timeout" type="number" label="Network timeout (seconds) — per-request timeout before retry" default="90" />
 		<setting id="net_retries" type="number" label="Network retries — number of retry attempts for transient errors" default="2" />
 		<setting id="net_backoff" type="number" label="Retry backoff (seconds) — base delay for exponential backoff (backoff * 2^(attempt-1))" default="1" />
 		<setting label="Tip: Lower timeout makes UI more responsive on flaky networks; increase retries for unstable servers." type="label" />

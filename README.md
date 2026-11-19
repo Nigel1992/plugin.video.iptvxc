@@ -8,7 +8,7 @@
 Optimized for **Kodi v21 (Omega)** & **Python 3**
 
 [![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=for-the-badge)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
-[![Version](https://img.shields.io/badge/Version-3.8.9-brightgreen?style=for-the-badge)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.9)
+[![Version](https://img.shields.io/badge/Version-3.8.10-brightgreen?style=for-the-badge)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.10)
 [![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=for-the-badge)](https://kodi.tv)
 [![Python](https://img.shields.io/badge/Python-3.x-yellow?style=for-the-badge)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=for-the-badge)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
@@ -118,6 +118,13 @@ XCUI Streams can send anonymous usage pings to help gauge adoption. **Enabled by
 ---
 
 ## 📝 Release History
+
+### Version 3.8.10 (2026-11-19)
+- **Issue #9 fix:** Live TV, VOD, and Series categories no longer take hours to populate.
+- Raised the default network timeout from 3s to 90s and enforced a 90s floor for older saved settings, so slow IPTV panels (which need 15–45s per response) are not cut off.
+- Added visible feedback when a category/channel/series load fails or returns no data, including a hint to increase the Network timeout in Settings.
+- Verified against a real provider: Live TV categories now load in ~16s (was timing out at 3s), VOD in ~16s, Series in under 1s; the full 55,000-channel "All" list loads in ~50s.
+- EPG loading also benefits from the longer timeout.
 
 ### Version 3.8.9 (2026-08-27)
 - **Search:** always prompts for a fresh query instead of auto-running the previous search (issue #7).

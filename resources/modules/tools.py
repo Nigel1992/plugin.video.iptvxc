@@ -375,7 +375,19 @@ def OPEN_URL(url, timeout=None, retries=None, backoff=None):
 	Sets `OPEN_URL._last_error` to the last exception seen.
 	"""
 	# Determine effective parameters from settings when not provided
-	eff_timeout = timeout if timeout is not None else _get_setting_int('net_timeout', 3)
+	if timeout is not None:
+		eff_timeout = timeout
+	else:
+		# Older add-on versions defaulted to 3 seconds, which is too aggressive for
+		# IPTV providers and led to empty category/channel listings on slower devices.
+		stored_timeout = _get_setting_int('net_timeout', 90)
+		try:
+			# Some IPTV panels need ~20s for normal categories and ~45s for
+			# the complete "All" category.  Keep a 90s floor so older saved
+			# values cannot truncate these large responses.
+			eff_timeout = max(90, int(stored_timeout))
+		except (TypeError, ValueError):
+			eff_timeout = 90
 	eff_retries = retries if retries is not None else _get_setting_int('net_retries', 2)
 	eff_backoff = backoff if backoff is not None else _get_setting_int('net_backoff', 1)
 	# Simple in-memory cache to avoid repeated network calls within a short time window

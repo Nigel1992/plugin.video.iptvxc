@@ -301,11 +301,15 @@ def home():
 def livecategory():
 	data = tools.OPEN_URL_CACHED(live_url, ttl_minutes=tools.CONTENT_CACHE_TTL_TV)
 	if not data:
+		tools.addDir('[COLOR grey]No Live TV categories loaded. Check credentials/Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
 	try:
 		root = ET.fromstring(data)
 	except Exception:
+		tools.addDir('[COLOR grey]Unable to parse Live TV categories. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 
 	for ch in root.findall('.//channel'):
@@ -339,11 +343,15 @@ def Livelist(url):
 	url  = buildcleanurl(url)
 	data = tools.OPEN_URL_CACHED(url, ttl_minutes=tools.CONTENT_CACHE_TTL_TV)
 	if not data:
+		tools.addDir('[COLOR grey]No channels loaded. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
 	try:
 		root = ET.fromstring(data)
 	except Exception:
+		tools.addDir('[COLOR grey]Unable to parse channels. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	channels = root.findall('.//channel')
 
@@ -386,10 +394,14 @@ def Livelist(url):
 def series_cats(url):
 	raw = tools.OPEN_URL_CACHED(player_api+'&action=get_series_categories', ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
 	if not raw:
+		tools.addDir('[COLOR grey]No Series categories loaded. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	try:
 		vod_cat = json.loads(raw)
 	except Exception:
+		tools.addDir('[COLOR grey]Unable to parse Series categories. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
 	for cat in vod_cat:
@@ -401,10 +413,14 @@ def series_cats(url):
 def serieslist(url):
 	raw = tools.OPEN_URL_CACHED(url, ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
 	if not raw:
+		tools.addDir('[COLOR grey]No series loaded. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	try:
 		ser_cat = json.loads(raw)
 	except Exception:
+		tools.addDir('[COLOR grey]Unable to parse series list. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	meta_on = xbmcaddon.Addon().getSetting('meta')=='true'
 	for ser in ser_cat:
@@ -416,10 +432,14 @@ def serieslist(url):
 def series_seasons(url):
 	raw = tools.OPEN_URL_CACHED(url, ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
 	if not raw:
+		tools.addDir('[COLOR grey]No seasons loaded. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	try:
 		ser_cat = json.loads(raw)
 	except Exception:
+		tools.addDir('[COLOR grey]Unable to parse seasons. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	info = ser_cat.get('info', {})
 	for season in ser_cat.get('episodes', {}):
@@ -428,10 +448,14 @@ def series_seasons(url):
 def season_list(url):
 	raw = tools.OPEN_URL_CACHED(url, ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
 	if not raw:
+		tools.addDir('[COLOR grey]No episodes loaded. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	try:
 		ser = json.loads(raw)
 	except Exception:
+		tools.addDir('[COLOR grey]Unable to parse episodes. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	info = ser.get('info', {})
 	episodes_map = ser.get('episodes', {})
@@ -486,12 +510,16 @@ def season_list(url):
 def vod(url):
 	data = tools.OPEN_URL_CACHED(vod_url if url == 'vod' else buildcleanurl(url), ttl_minutes=tools.CONTENT_CACHE_TTL_MOVIES)
 	if not data:
+		tools.addDir('[COLOR grey]No Movies/VOD categories loaded. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
 	meta_on = xbmcaddon.Addon().getSetting('meta')=='true'
 	try:
 		root = ET.fromstring(data)
 	except Exception:
+		tools.addDir('[COLOR grey]Unable to parse Movies/VOD. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
+			'url', -1, icon, background, '')
 		return
 	for ch in root.findall('.//channel'):
 		t = ch.findtext('title', default='')
@@ -834,7 +862,7 @@ def search():
 			tools.addDir(label, r[2], r[3], r[4], r[5], r[6])
 	if not results:
 		if searched_total == 0:
-			tools.addDir('[COLOR red]No subscription data loaded. Check credentials or Clear Cache.[/COLOR]',
+			tools.addDir('[COLOR red]No subscription data loaded. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
 				'url', -1, iconsearch, background, '')
 		else:
 			tools.addDir('[COLOR grey]No results found for "%s" (searched %d items).[/COLOR]' % (str(text), searched_total),
@@ -854,7 +882,7 @@ def catchup():
 def listcatchup():
 	raw = tools.OPEN_URL_CACHED(panel_api, ttl_minutes=tools.CONTENT_CACHE_TTL_TV)
 	if not raw:
-		tools.addDir('[COLOR grey]No catch-up data loaded. Check credentials or Clear Cache.[/COLOR]',
+		tools.addDir('[COLOR grey]No catch-up data loaded. Check credentials or Clear Cache. If your provider is slow, increase Network timeout in Settings.[/COLOR]',
 			'url', -1, iconcatchup, background, '')
 		return
 	try:

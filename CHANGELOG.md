@@ -1,3 +1,12 @@
+# Version 3.8.10 (2026-11-19)
+
+### 🐛 Bug fixes (issue #9)
+- Fixed Live TV, VOD, and Series categories taking hours to populate (or never loading).
+- Root cause: the default network timeout was 3 seconds, but many IPTV panels need 15–45 seconds per response. Requests were cut off before the panel finished responding.
+- Raised the default network timeout to 90 seconds and enforced a 90-second floor for older saved settings, so slow providers are no longer truncated.
+- Added visible empty/error feedback in all category and list views, including a hint to increase the Network timeout in Settings when nothing loads.
+- Verified against a real provider: Live TV categories load in ~16s, VOD in ~16s, Series in under 1s, and the full 55,000-channel "All" list loads in ~50s.
+
 # Version 3.8.9 (2026-08-27)
 
 ### 🔎 Search and subscription readiness

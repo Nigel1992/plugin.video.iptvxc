@@ -130,10 +130,17 @@ jobs:
               if not webhooks[channel]:
                   print("Discord webhook secret missing; skipping")
                   raise SystemExit(0)
-              msg = discord(webhooks[channel].split("?")[0] + "?wait=true", payload)
-              github("POST", f"/repos/{repo}/issues/{number}/comments", {
-                  "body": f"<!-- discord-message: {channel}:{msg['id']} -->\nLinked to the Discord post.",
-              })
+              try:
+                  msg = discord(webhooks[channel].split("?")[0] + "?wait=true", payload)
+              except urllib.error.HTTPError as e:
+                  print("Could not post Discord message -", e.code, e.read().decode(errors="replace")[:500])
+                  raise SystemExit(0)
+              try:
+                  github("POST", f"/repos/{repo}/issues/{number}/comments", {
+                      "body": f"<!-- discord-message: {channel}:{msg['id']} -->\nLinked to the Discord post.",
+                  })
+              except urllib.error.HTTPError as e:
+                  print("Could not link Discord message -", e.code, e.read().decode(errors="replace")[:500])
               print("Posted Discord message", msg["id"])
               raise SystemExit(0)
 
@@ -175,4 +182,8 @@ jobs:
           if not url:
               print("Discord webhook secret missing; skipping")
               raise SystemExit(0)
-          print("Discord response:", post(url, payload))
+          try:
+              print("Discord response:", post(url, payload))
+          except urllib.error.HTTPError as e:
+              print("Could not post Discord message -", e.code, e.read().decode(errors="replace")[:500])
+              raise SystemExit(0)

@@ -1,15 +1,10 @@
-[![Discord](https://img.shields.io/discord/1468295714961494029?color=7289da&label=Join%20Our%20Discord&logo=discord&logoColor=white&style=for-the-badge)](https://discord.gg/9F2NZuydXT)
-
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Nigel1992)
-
 <div align="center">
 
-# **XCUI Streams** ### *plugin.video.iptvxc*
+# XCUI Streams
+### `plugin.video.iptvxc`
 
-[![Vibe Coded](https://img.shields.io/badge/Vibe_Coded-✨-8A2BE2?style=for-the-badge)](https://github.com)
+**High-performance XC / XCUI playback for Kodi** — Live TV · VOD · Catch-up · TV Series
 
-**High-performance XC / XCUI playback for Kodi** Live TV • VOD • Catch-up • TV Series  
 Optimized for **Kodi v21 (Omega)** & **Python 3**
 
 [![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=for-the-badge)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
@@ -17,126 +12,73 @@ Optimized for **Kodi v21 (Omega)** & **Python 3**
 [![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=for-the-badge)](https://kodi.tv)
 [![Python](https://img.shields.io/badge/Python-3.x-yellow?style=for-the-badge)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=for-the-badge)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
+[![Discord](https://img.shields.io/discord/1468295714961494029?color=7289da&label=Discord&logo=discord&logoColor=white&style=for-the-badge)](https://discord.gg/9F2NZuydXT)
+[![Vibe Coded](https://img.shields.io/badge/Vibe_Coded-✨-8A2BE2?style=for-the-badge)](https://github.com)
 
----
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Nigel1992)
 
-**Official Kodi Repository for this addon:**
-👉 [Nigel1992/kodi-repository](https://github.com/Nigel1992/kodi-repository)
+**Official Kodi repository:** [Nigel1992/kodi-repository](https://github.com/Nigel1992/kodi-repository)
 
 </div>
 
 ---
 
-**Quick links:** [Latest release](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest) · [Installation](#-installation) · [Troubleshooting](#%EF%B8%8F-troubleshooting) · [Issues](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
-
-## 📊 Usage statistics
-
-
-![Total Downloads (all releases)](https://img.shields.io/github/downloads/Nigel1992/plugin.video.iptvxc/total?label=Total%20Downloads&color=brightgreen&style=for-the-badge)
-![Telemetry Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstalls&query=%24.value&label=Telemetry%20Installs&color=blue&style=for-the-badge)
-![Today%27s%20Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstall-2026-11-19&query=%24.value&label=Today%27s%20Installs&color=orange&style=for-the-badge)
-![Today%27s%20Active](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Factive-2026-11-19&query=%24.value&label=Today%27s%20Active&color=blue&style=for-the-badge)
-![Daily Active (Cumulative)](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Fdaily&query=%24.value&label=Daily%20Active%20(Cumulative)&color=lightgrey&style=for-the-badge)
-
-- Total installs and daily active counts are tracked via an anonymous opt-out ping (enabled by default).
-- Raw counters: [installs](https://abacus.jasoncameron.dev/get/iptvxc/installs) · [daily](https://abacus.jasoncameron.dev/get/iptvxc/daily)
-
-
 ## 🚀 Overview
 
-Built for fast, reliable XC/XCUI playback on Kodi 21 (Omega) with modern parsing, caching, and clean navigation.
+XCUI Streams is a fast, reliable XC/XCUI playback add-on for Kodi 21 (Omega). It provides modern parsing, persistent caching, clean navigation, and a built-in TV guide, optimized for inconsistent provider APIs.
 
-## 🔎 At a glance
-
-- ⚡ Performance-first browsing for Live, VOD, Series, Catch-up
-- 🛰️ Resilient XML/JSON parsing tuned for XC/XCUI panels
-- 🧭 Simple router-style navigation with restored series flows
-- 🛠️ Built-in speed test and advanced settings presets
-- 🧠 Defensive handling of inconsistent provider payloads
-- 🎯 Optimized for Kodi v21 (Omega) / Python 3
+**Quick links:** [Latest release](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest) · [Installation](#-installation) · [Troubleshooting](#-troubleshooting) · [Issues](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
 
 ---
 
-## 🏆 Donators Hall of Fame
+## 📊 Usage statistics
 
-![Supporters](https://img.shields.io/badge/Supporters-1-orange?style=for-the-badge)
+![Total Downloads (all releases)](https://img.shields.io/github/downloads/Nigel1992/plugin.video.iptvxc/total?label=Total%20Downloads&color=brightgreen&style=for-the-badge)
+![Telemetry Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstalls&query=%24.value&label=Telemetry%20Installs&color=blue&style=for-the-badge)
+![Today's Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstall-2026-11-19&query=%24.value&label=Today%27s%20Installs&color=orange&style=for-the-badge)
+![Today's Active](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Factive-2026-11-19&query=%24.value&label=Today%27s%20Active&color=blue&style=for-the-badge)
+![Daily Active (Cumulative)](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Fdaily&query=%24.value&label=Daily%20Active%20(Cumulative)&color=lightgrey&style=for-the-badge)
 
-A huge thank you to the supporters who have contributed to charity through this project:
-
-| Donator | Date | Goal / Charity |
-| :--- | :--- | :--- |
-| **Joe/Joseph T** | March 2026 | KWF |
-| *Your Name?* | *2026* | *Your Choice* |
+Total installs and daily active counts are tracked via an anonymous opt-out ping (enabled by default).
+Raw counters: [installs](https://abacus.jasoncameron.dev/get/iptvxc/installs) · [daily](https://abacus.jasoncameron.dev/get/iptvxc/daily)
 
 ---
 
 ## ✨ Features
 
-- Fast Live/VOD navigation with persistent file-based caching
-- Configurable cache expiry per content type (Live TV, Movies, Series) in Settings → Cache
-- TV Series with seasons/episodes restored
+- Fast Live / VOD / Series / Catch-up navigation with persistent file-based caching
+- Configurable cache expiry per content type (Settings → Cache)
+- TV Series with seasons and episodes
 - Catch-up TV (provider-dependent)
-- Speed test and advanced settings helpers
-- Robust handling of inconsistent provider APIs
-- Icon-host reachability checks — dead icon servers never stall the UI
-- **Custom EPG / TV Guide** — full in-addon EPG window with two-panel layout (channels + programme schedule), category browsing, search for categories and channels, progress bars on currently airing shows, and info panel
-- **EPG remembers last category** — reopening the TV Guide auto-loads the previously viewed category
-- **Programme click plays channel** — selecting any programme in the schedule plays that channel directly
-- **Live programme info in player overlay** — pressing Info (i) during playback shows the current programme title, description, and channel name
-- **Fast playback startup** — playable routes use Kodi's standard resolver and activate fullscreen without long-lived plugin threads
-- **Favorites** — long-press any channel, movie, or series to add/remove from Favorites; new Favorites menu on home screen for instant access to your most-watched content
-- **Recently Watched History** — automatically logs the last 25 streams played (configurable); accessible from the home screen with timestamps; clear from Extras
-- **Multi-Server Profiles** — save, switch between, and delete multiple IPTV server credentials from Settings → Switch Server; cache is auto-cleared on switch
-- **Last Played** — the last played stream appears at the top of home as a quick-resume item
+- Speed test and advanced settings presets
+- Icon-host reachability checks (dead icon servers never stall the UI)
+- **Custom EPG / TV Guide** — in-addon EPG window with two-panel layout, category browsing, search, progress bars, and info panel
+- **EPG remembers last category** and plays the channel when a programme is selected
+- **Live programme info** in the player overlay (press Info during playback)
+- **Fast playback startup** via Kodi's standard resolver, automatic fullscreen
+- **Favorites** — long-press to add/remove; dedicated Favorites menu on home
+- **Recently Watched History** — logs the last 25 streams (configurable); clearable from Extras
+- **Multi-Server Profiles** — save, switch, and delete provider credentials (cache auto-cleared on switch)
+- **Last Played** quick-resume item at the top of home
 
 ---
 
-## 🏁 Quick Start
-
-1) Install from the latest zip: https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest  
-2) Open Kodi → Add-ons → Install from zip → select `plugin.video.iptvxc-<version>.zip`  
-3) Enter provider credentials in Settings → General (DNS, Username, Password)  
-4) Browse Live / VOD / Series / Catch-up
-
-## 📋 What you’ll need
-
-- Kodi 21 (Omega) or newer
-- XC/XCUI-compatible account (host, username, password)
-- Network access to your provider’s panel
-
-## 🧭 Navigation map
-
-- **Live TV** → Categories → Channels → Play
-- **VOD** → Categories → Titles → Play
-- **Series** → Show → Season → Episode → Play
-- **Catch-up** → Channel → Program → Play (if provider supports)
-- **Tools** → Speed Test / Advanced settings presets
-
----
-
-## 🧩 Compatibility
+## 📋 Requirements
 
 | Component | Requirement |
-|---------|-------------|
+|---|---|
 | **Kodi** | v21 (Omega) or newer |
-| **Python** | Python 3 runtime bundled with Kodi |
-| **Account** | Active XC / XCUI-compatible provider |
+| **Python** | Python 3 (bundled with Kodi) |
+| **Account** | Active XC / XCUI-compatible provider (host, username, password) |
 
 ---
 
 ## 📦 Installation
 
-1. **Download the latest release** 👉 https://github.com/Nigel1992/plugin.video.iptvxc/releases
-
-2. **Or install from the official Kodi repository** 👉 [Nigel1992/kodi-repository](https://github.com/Nigel1992/kodi-repository)
-
-3. **Install in Kodi**
-   - `Settings` → `Add-ons` → `Install from zip file`
-   - Select `plugin.video.iptvxc-<version>.zip`
-
-4. **Configure**
-  - Open the add-on
-  - Enter your provider credentials in **Settings**
+1. Download the latest release: [Releases](https://github.com/Nigel1992/plugin.video.iptvxc/releases)
+2. Or install from the official repository: [Nigel1992/kodi-repository](https://github.com/Nigel1992/kodi-repository)
+3. In Kodi: `Settings` → `Add-ons` → `Install from zip file` → select `plugin.video.iptvxc-<version>.zip`
+4. Open the add-on and enter provider credentials in **Settings → General**
 
 ---
 
@@ -144,99 +86,80 @@ A huge thank you to the supporters who have contributed to charity through this 
 
 - Open **XCUI Streams** from *Video add-ons*
 - Browse: **Live TV**, **VOD**, **TV Series**, **Catch-up TV**
-- **TV Series flow:** *Series* → *Season* → *Episode*
+- **Series flow:** *Series* → *Season* → *Episode* → *Play*
+- **Navigation map:**
+  - Live TV → Categories → Channels → Play
+  - VOD → Categories → Titles → Play
+  - Series → Show → Season → Episode → Play
+  - Catch-up → Channel → Program → Play (if supported)
+
+---
+
+## 🔒 Privacy & opt-out
+
+XCUI Streams can send anonymous usage pings to help gauge adoption. **Enabled by default (opt-out).**
+
+- Pings: one per install (total installs) and one per day per install (daily active).
+- No credentials, personal data, or device identifiers are sent.
+- A random anonymous ID is generated and stored locally; it is never transmitted.
+- Toggle: **Settings → Features → Send anonymous usage ping (opt-out)**
+- Counter endpoints are configurable in Settings → Features.
+- Disable the setting to stop pinging.
+
+---
+
+## 🛠️ Troubleshooting
+
+- **No content visible?** Verify provider credentials and network connectivity.
+- **Missing metadata:** Normal for some providers.
+- **Deprecation warnings:** `ListItem.setInfo()` warnings do not affect playback.
+- **Provider differences:** Not all providers share the same API; open an issue with your host if something breaks.
 
 ---
 
 ## 📝 Release History
 
 ### Version 3.8.9 (2026-08-27)
-- **Search:** clicking Search now always prompts for a fresh query instead of auto-running the previous search (issue #7).
-- **Readiness:** validates subscription credentials before searching and shows clear status when no data is loaded (issue #8).
-- **Feedback:** search/catch-up now report searched counts and empty states; progress shows result totals (live during search).
-- **Reload:** added "Reload Subscription Data" (clears cache) in Settings and Extras.
-- **Home:** shows a setup prompt when subscription details are missing.
+- **Search:** always prompts for a fresh query instead of auto-running the previous search (issue #7).
+- **Readiness:** validates credentials before searching; clear status when no data loaded (issue #8).
+- **Feedback:** searched counts and empty states; live "Found: N" during search.
+- **Reload:** "Reload Subscription Data" action in Settings and Extras.
+- **Home:** setup prompt when subscription details are missing.
 - **Telemetry:** opt-out anonymous usage ping (enabled by default).
 
 ### Version 3.8.8 (2026-08-26)
-- **Search:** rebuilt around real Xtream catalogs, including list/dictionary responses, category-aware VOD requests, and legacy panel fallbacks.
-- **Search progress:** shows the current section and overall percentage while scanning, and can be cancelled.
-- **Search navigation:** stopping playback returns to the same results; returning to the main menu resets Search for a fresh query.
-- **Live TV/EPG:** canonical channel names stay visible when programme data is present; generated PVR playlists now use the real channel name for `tvg-name`.
-- **Playback:** fixed Last Played/history route errors, standardized Kodi resolver playback, automatic fullscreen startup, and recurring Last Played labels.
-- **Responsiveness:** removed resident plugin threads that could hold Kodi invocations open.
-- **Cache:** confirmation now happens before deletion and a detailed result is always shown.
-- **Reliability:** improved endpoint fallback, atomic state writes, URL encoding, icon probing, and bounded network calls.
-- **Privacy:** redacted provider credentials from add-on logs and masked passwords in Account Information.
+- Search rebuilt around real Xtream catalogs; cancellable progress; restored series flows.
+- Live TV/EPG canonical channel names; generated PVR playlists use real channel names.
+- Playback fixes (resolver, fullscreen, Last Played labels); removed resident threads.
+- Cache confirmation; endpoint fallback; credential redaction.
 
 ### Version 3.8.7 (2026-08-25)
-- **Clear Cache:** fixed an error on Kodi 21 caused by the removed `xbmc.translatePath()` API.
-- **Compatibility:** cache paths now use Kodi's cross-platform `xbmcvfs.translatePath()` API on Windows, Linux, macOS, Android, and other supported platforms.
+- Clear Cache fix for Kodi 21 (`xbmcvfs.translatePath`).
 
 ### Version 3.8.6 (2026-04-01)
-- **Search:** added scoped search popup for Live TV & Catchup / Movies/VOD / Series / All sections.
-- **Network:** added `net_timeout`, `net_retries`, `net_backoff` settings with explanation in Settings > Network.
-- **Stability:** added retry/backoff and fallback to cache for panel/vod/series endpoints on transient failures.
-- **Logic:** added deterministic dedupe+sort and state persistence for query + scope (restore on back navigation).
+- Scoped search popup; network retry settings; deterministic dedupe/sort.
 
 ### Version 3.8.5 (2026-03-31)
-- **Favorites:** top-level Favorites now show category entries only (Live TV / Movies/VOD / Series) with counts — click a category to view that category's favorited items.
-- **Favorites:** added automatic classification and a stored `category` for favorites (live / vod / series) so items are grouped correctly when listed.
-- **Playback:** added per-category subtitle toggles in Settings → Playback (`subtitles_live`, `subtitles_vod`, `subtitles_series`) and enforced subtitle visibility per-category at playback start.
-- **Bug fixes:** small playback and EPG fixes (including a typo fix in the EPG updater call) and a number of defensive checks.
+- Favorites categories with counts; per-category subtitles; bug fixes.
 
 ### Version 3.8.4 (2026-03-28)
-- Mapped menu `icon_*.png` files in `resources/media/` to home menu items.
-- Added `icon_LAST_PLAYED.png` and set it as the Last Played home icon.
-- Set Extras to use `icon_EXTRAS.png` as a local fallback.
-- Fixed `IndentationError` in `default.py` (normalized ART PATHS).
-- Packaged and published release `v3.8.4` with a clean ZIP.
+- Icon mapping, Last Played icon, clean ZIP packaging.
 
 ### Version 3.6.0 (2026-03-03)
-- Fixed freeze/slowdown when pressing X to stop a stream.
-- Fixed Kodi becoming unresponsive on Stop or stuck busy dialogs.
-- Added persistent file-based caching with user-configurable expiry.
-- **Custom EPG / TV Guide** — full self-contained in-addon EPG window.
-- **Favorites & Recently Watched** — history logging and home screen access.
-- **Multi-Server Profiles** — save and switch between multiple provider credentials.
+- Freeze/stop fixes, persistent caching, EPG, Favorites, Multi-Server Profiles.
 
 ### Version 3.5.2 (2026-01-28)
-- Playback now automatically retries up to 5 times if the connection drops.
+- Playback retry up to 5 times.
 
 ---
-
-## 🛠️ Troubleshooting
-
-- **No content visible?** Verify provider credentials and check network connectivity.
-- **Missing metadata:** Normal for some providers.
-- **Deprecation warnings:** `ListItem.setInfo()` warnings do not affect playback.
-- **Provider differences:** Not all providers share the same API structure; open an issue with your host name if something breaks.
-
----
-
-## 🔒 Privacy & opt-out
-
-XCUI Streams can send anonymous usage pings to help the maintainer gauge adoption. It is **enabled by default** (opt-out).
-
-- Pings: one per install (total installs) and one per day per install (daily active). No credentials, personal data, or device identifiers are sent.
-- A random anonymous ID is generated and stored locally; it is never transmitted.
-- Toggle in **Settings → Features → Send anonymous usage ping (opt-out)**.
-- Counter endpoints are configurable in Settings → Features.
-- To stop, disable the setting. Existing installs stop pinging after that.
 
 ## 🤝 Contributing
 
 Issues and PRs are welcome. Please avoid sharing provider credentials publicly. Include Kodi version, platform, and logs when reporting bugs.
 
----
-
-## 📋 Project Board & Roadmap
-
-We use GitHub Projects to track issues and the roadmap: [View the board here](https://github.com/Nigel1992/plugin.video.iptvxc/projects)
-
-- **Report bugs:** Use the `bug` label with reproduction steps.
-- **Request features:** Use the `enhancement` label.
-- **Contribute code:** Submit a PR referencing the related issue.
+- **Report bugs:** use the `bug` label with reproduction steps.
+- **Request features:** use the `enhancement` label.
+- **Contribute code:** submit a PR referencing the related issue.
 
 ---
 
@@ -247,4 +170,6 @@ We use GitHub Projects to track issues and the roadmap: [View the board here](ht
 
 ## Support This Project
 
-Support this project! All donations go towards your chosen charity. You can pick any charity you'd like, and I will ensure the funds are sent their way. Please note that standard payment processing fees (Ko-fi & PayPal) will be deducted from the total. As a thank you, your name will be listed as a supporter/donor in this project. Feel free to email me at thedjskywalker@gmail.com for proof of the donation or to let me know which charity you've selected!
+All donations go to your chosen charity. Your name will be listed as a supporter/donor. Contact: thedjskywalker@gmail.com
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Nigel1992)

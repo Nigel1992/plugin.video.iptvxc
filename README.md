@@ -15,7 +15,7 @@
 Optimized for **Kodi v21 (Omega)** & **Python 3**
 
 [![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
-[![Version](https://img.shields.io/badge/Version-3.8.9-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.9)
+[![Version](https://img.shields.io/badge/Version-3.8.10-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.10)
 [![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=flat-square)](https://kodi.tv)
 [![Python](https://img.shields.io/badge/Python-3.x-yellow?style=flat-square)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
@@ -138,6 +138,9 @@ A huge thank you to the supporters who have contributed to charity through this 
 ---
 
 ## 📝 Release History
+
+### Version 3.8.10 (2026-08-27)
+- **Search:** restored immediate search after selecting scope (fixed regression where search did nothing).
 
 ### Version 3.8.9 (2026-08-27)
 - **Search:** clicking Search now always prompts for a fresh query instead of auto-running the previous search (issue #7).

@@ -523,11 +523,7 @@ def search():
 		text = searchdialog()
 		if not text:
 			return
-		result_url = 'plugin://%s/?%s' % (ADDON_ID, urllib.parse.urlencode({
-			'mode': '5', 'scope': scope, 'query': text,
-		}))
-		xbmc.executebuiltin('Container.Update(%s,replace)' % result_url)
-		return
+	_save_search_state(scope, text)
 	query = str(text).strip().casefold()
 	try:
 		xbmcplugin.setPluginCategory(int(sys.argv[1]), 'Search results: %s' % str(text))

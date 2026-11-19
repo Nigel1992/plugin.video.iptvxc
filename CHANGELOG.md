@@ -1,3 +1,8 @@
+# Version 3.8.10 (2026-08-27)
+
+### 🔎 Search
+- Fixed regression: search now runs immediately after selecting scope (no longer returns empty).
+
 # Version 3.8.9 (2026-08-27)
 
 ### 🔎 Search and subscription readiness

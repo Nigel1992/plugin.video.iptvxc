@@ -3,8 +3,6 @@
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Nigel1992)
 
-> [!IMPORTANT]
-
 <div align="center">
 
 # **XCUI Streams** ### *plugin.video.iptvxc*
@@ -84,7 +82,7 @@ A huge thank you to the supporters who have contributed to charity through this 
 
 1) Install from the latest zip: https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest  
 2) Open Kodi → Add-ons → Install from zip → select `plugin.video.iptvxc-<version>.zip`  
-3) Enter provider credentials in Settings → Accounts  
+3) Enter provider credentials in Settings → General (DNS, Username, Password)  
 4) Browse Live / VOD / Series / Catch-up
 
 ## 📋 What you’ll need
@@ -217,13 +215,13 @@ A huge thank you to the supporters who have contributed to charity through this 
 
 ## 🔒 Privacy & opt-out
 
-XCUI Streams can send a single anonymous usage ping per install to help the maintainer gauge adoption. It is **enabled by default** (opt-out).
+XCUI Streams can send anonymous usage pings to help the maintainer gauge adoption. It is **enabled by default** (opt-out).
 
-- Enable it in **Settings → Features → Send anonymous usage ping (opt-in)**.
-- The ping contains no credentials, no personal data, and no device identifiers — only an increment to a public counter.
+- Pings: one per install (total installs) and one per day per install (daily active). No credentials, personal data, or device identifiers are sent.
 - A random anonymous ID is generated and stored locally; it is never transmitted.
-- You can change the counter endpoint in **Settings → Features → Telemetry endpoint** (default: a public Abacus counter).
-- To stop, disable the setting. Existing installs that already pinged will not ping again.
+- Toggle in **Settings → Features → Send anonymous usage ping (opt-out)**.
+- Counter endpoints are configurable in Settings → Features.
+- To stop, disable the setting. Existing installs stop pinging after that.
 
 ## 🤝 Contributing
 

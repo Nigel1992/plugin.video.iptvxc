@@ -15,7 +15,7 @@
 Optimized for **Kodi v21 (Omega)** & **Python 3**
 
 [![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
-[![Version](https://img.shields.io/badge/Version-3.8.9-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.9)
+[![Version](https://img.shields.io/badge/Version-3.8.10-brightgreen?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.10)
 [![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=flat-square)](https://kodi.tv)
 [![Python](https://img.shields.io/badge/Python-3.x-yellow?style=flat-square)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=flat-square)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
@@ -201,6 +201,16 @@ A huge thank you to the supporters who have contributed to charity through this 
 - **Provider differences:** Not all providers share the same API structure; open an issue with your host name if something breaks.
 
 ---
+
+## 📊 Usage statistics (opt-in)
+
+XCUI Streams can send a single anonymous usage ping per install to help the maintainer gauge adoption. It is **disabled by default**.
+
+- Enable it in **Settings → Features → Send anonymous usage ping (opt-in)**.
+- The ping contains no credentials, no personal data, and no device identifiers — only an increment to a public counter.
+- A random anonymous ID is generated and stored locally; it is never transmitted.
+- You can change the counter endpoint in **Settings → Features → Telemetry endpoint** (default: a public Abacus counter).
+- To stop, disable the setting. Existing installs that already pinged will not ping again.
 
 ## 🤝 Contributing
 

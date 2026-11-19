@@ -1,3 +1,8 @@
+# Version 3.8.10 (2026-08-27)
+
+### 📊 Telemetry
+- Added opt-in anonymous usage ping (disabled by default) with configurable counter endpoint.
+
 # Version 3.8.9 (2026-08-27)
 
 ### 🔎 Search and subscription readiness

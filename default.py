@@ -183,10 +183,46 @@ def _clear_search_state():
 	except Exception:
 		pass
 
+def _telemetry_ping():
+	"""Send a single anonymous opt-in usage ping per install (no PII)."""
+	try:
+		if ADDON.getSetting('telemetry_enabled') != 'true':
+			return
+		flag_path = os.path.join(ADDONDATA, 'telemetry_pinged')
+		if os.path.exists(flag_path):
+			return
+		os.makedirs(ADDONDATA, exist_ok=True)
+		# Store a random anonymous install ID locally (never sent).
+		id_path = os.path.join(ADDONDATA, 'telemetry_id')
+		if not os.path.exists(id_path):
+			import uuid
+			with open(id_path, 'w', encoding='utf-8') as id_file:
+				id_file.write(uuid.uuid4().hex)
+		endpoint = (ADDON.getSetting('telemetry_endpoint') or '').strip()
+		if not endpoint:
+			endpoint = 'https://abacus.jasoncameron.dev/hit/iptvxc/installs'
+		try:
+			urllib.request.urlopen(endpoint, timeout=3).read()
+		except Exception:
+			return
+		try:
+			with open(flag_path, 'w', encoding='utf-8') as flag_file:
+				flag_file.write(str(time.time()))
+		except Exception:
+			pass
+	except Exception:
+		pass
+
+
 def home():
 	# Reaching the main menu ends the prior search session.  Until then its
 	# scope/query remain available so Kodi can rebuild results after playback.
 	_clear_search_state()
+	# Opt-in anonymous usage ping (once per install).
+	try:
+		_telemetry_ping()
+	except Exception:
+		pass
 	# Prompt for subscription details if they are missing so search/catchup
 	# are never attempted against an unconfigured account.
 	if not _credentials_ready():

@@ -553,8 +553,8 @@ def search():
 			index = active_sections.index(section)
 			span = 86.0 / max(1, len(active_sections))
 			percent = 3.0 + (index * span) + (max(0.0, min(1.0, fraction)) * span)
-			search_progress.update(int(percent), '%s %s...\nQuery: %s' % (
-				action, section_names[section], str(text)))
+			search_progress.update(int(percent), '%s %s...\nQuery: %s\nFound: %d' % (
+				action, section_names[section], str(text), len(results)))
 			return bool(search_progress.iscanceled())
 		except Exception:
 			return False
@@ -579,7 +579,7 @@ def search():
 		catalog = get_legacy_items()
 		total = max(1, len(catalog))
 		for index, item in enumerate(catalog):
-			if index % 500 == 0 and update_section(
+			if index % 100 == 0 and update_section(
 				kind, 0.10 + (0.15 * index / total), 'Preparing'):
 				search_cancelled = True
 				break
@@ -613,7 +613,7 @@ def search():
 		searched_total += len(live_items)
 		live_total = max(1, len(live_items))
 		for index, item in enumerate(live_items):
-			if index % 250 == 0 and update_section(
+			if index % 100 == 0 and update_section(
 				'live', 0.25 + (0.75 * index / live_total), 'Searching'):
 				search_cancelled = True
 				break
@@ -666,7 +666,7 @@ def search():
 		searched_total += len(vod_items)
 		vod_total = max(1, len(vod_items))
 		for index, item in enumerate(vod_items):
-			if index % 250 == 0 and update_section(
+			if index % 100 == 0 and update_section(
 				'vod', 0.25 + (0.75 * index / vod_total), 'Searching'):
 				search_cancelled = True
 				break
@@ -696,7 +696,7 @@ def search():
 		searched_total += len(series_items)
 		series_total = max(1, len(series_items))
 		for index, item in enumerate(series_items):
-			if index % 250 == 0 and update_section(
+			if index % 100 == 0 and update_section(
 				'series', 0.15 + (0.85 * index / series_total), 'Searching'):
 				search_cancelled = True
 				break

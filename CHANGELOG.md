@@ -1,3 +1,8 @@
+# Version 3.8.11 (2026-08-27)
+
+### 🔎 Search
+- Search progress now shows live "Found: N" count and updates more frequently.
+
 # Version 3.8.10 (2026-08-27)
 
 ### 🔎 Search

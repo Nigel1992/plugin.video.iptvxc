@@ -207,11 +207,20 @@ def _telemetry_ping():
 		if not daily_endpoint:
 			daily_endpoint = 'https://abacus.jasoncameron.dev/hit/iptvxc/daily'
 
+		base = installs_endpoint.rsplit('/', 1)[0]
+		today = time.strftime('%Y-%m-%d')
+		install_today_endpoint = base + '/install-' + today
+		active_today_endpoint = base + '/active-' + today
+
 		# Total installs: ping once per install.
 		installed_flag = os.path.join(ADDONDATA, 'telemetry_installed')
 		if not os.path.exists(installed_flag):
+			for ep in (installs_endpoint, install_today_endpoint):
+				try:
+					urllib.request.urlopen(ep, timeout=3).read()
+				except Exception:
+					pass
 			try:
-				urllib.request.urlopen(installs_endpoint, timeout=3).read()
 				with open(installed_flag, 'w', encoding='utf-8') as f:
 					f.write(str(time.time()))
 			except Exception:
@@ -219,7 +228,6 @@ def _telemetry_ping():
 
 		# Daily active: ping once per day per install.
 		last_daily_path = os.path.join(ADDONDATA, 'telemetry_last_daily')
-		today = time.strftime('%Y-%m-%d')
 		last_daily = ''
 		try:
 			if os.path.exists(last_daily_path):
@@ -228,8 +236,12 @@ def _telemetry_ping():
 		except Exception:
 			last_daily = ''
 		if last_daily != today:
+			for ep in (daily_endpoint, active_today_endpoint):
+				try:
+					urllib.request.urlopen(ep, timeout=3).read()
+				except Exception:
+					pass
 			try:
-				urllib.request.urlopen(daily_endpoint, timeout=3).read()
 				with open(last_daily_path, 'w', encoding='utf-8') as f:
 					f.write(today)
 			except Exception:

@@ -206,7 +206,9 @@ A huge thank you to the supporters who have contributed to charity through this 
 ## 📊 Usage statistics
 
 ![Total Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstalls&query=%24.value&label=Total%20Installs&color=brightgreen)
-![Daily Active](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Fdaily&query=%24.value&label=Daily%20Active&color=blue)
+![Today%27s%20Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstall-2026-11-19&query=%24.value&label=Today%27s%20Installs&color=orange)
+![Today%27s%20Active](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Factive-2026-11-19&query=%24.value&label=Today%27s%20Active&color=blue)
+![Daily%20Active%20(Cumulative)](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Fdaily&query=%24.value&label=Daily%20Active%20(Cumulative)&color=lightgrey)
 
 - Total installs and daily active counts are tracked via an anonymous opt-out ping (enabled by default).
 - Raw counters: [installs](https://abacus.jasoncameron.dev/get/iptvxc/installs) · [daily](https://abacus.jasoncameron.dev/get/iptvxc/daily)

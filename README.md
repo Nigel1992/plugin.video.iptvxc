@@ -205,6 +205,8 @@ A huge thank you to the supporters who have contributed to charity through this 
 
 ## 📊 Usage statistics
 
+![Usage chart](stats/chart.png)
+
 ![Total Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstalls&query=%24.value&label=Total%20Installs&color=brightgreen)
 ![Today%27s%20Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstall-2026-11-19&query=%24.value&label=Today%27s%20Installs&color=orange)
 ![Today%27s%20Active](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Factive-2026-11-19&query=%24.value&label=Today%27s%20Active&color=blue)

@@ -8,7 +8,7 @@
 Optimized for **Kodi v21 (Omega)** & **Python 3**
 
 [![Latest Release](https://img.shields.io/github/v/release/Nigel1992/plugin.video.iptvxc?style=for-the-badge)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest)
-[![Version](https://img.shields.io/badge/Version-3.8.10-brightgreen?style=for-the-badge)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.8.10)
+[![Version](https://img.shields.io/badge/Version-3.9.0-brightgreen?style=for-the-badge)](https://github.com/Nigel1992/plugin.video.iptvxc/releases/tag/v3.9.0)
 [![Kodi](https://img.shields.io/badge/Kodi-21%20Omega-blue?style=for-the-badge)](https://kodi.tv)
 [![Python](https://img.shields.io/badge/Python-3.x-yellow?style=for-the-badge)](https://www.python.org/)
 [![Issues](https://img.shields.io/github/issues/Nigel1992/plugin.video.iptvxc?style=for-the-badge)](https://github.com/Nigel1992/plugin.video.iptvxc/issues)

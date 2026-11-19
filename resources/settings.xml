@@ -36,5 +36,13 @@
 		<setting id="subtitles_live" type="bool" label="Enable subtitles for Live TV" default="false" />
 		<setting id="subtitles_vod" type="bool" label="Enable subtitles for Movies/VOD" default="false" />
 		<setting id="subtitles_series" type="bool" label="Enable subtitles for Series" default="false" />
+		<setting id="auto_reconnect" type="bool" label="Auto-reconnect live streams" default="true" />
+		<setting id="auto_reconnect_max_retries" type="number" label="Max reconnect retries" default="5" />
+		<setting id="ts_resilience_enabled" type="bool" label=".ts stream resilience (reconnect)" default="true" />
+		<setting id="ts_reconnect_delay" type="number" label="Reconnect delay/buffer tolerance (seconds)" default="20" />
+		<setting id="live_timeshift_enabled" type="bool" label="Live TV Pause / Timeshift (.ts)" default="false" />
+	</category>
+	<category label="Trakt">
+		<setting id="trakt_enabled" type="bool" label="Enable Trakt (via script.trakt addon)" default="false" />
 	</category>
 </settings>

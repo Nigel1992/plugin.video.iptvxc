@@ -57,12 +57,12 @@ try:
 except Exception:
 	pass
 #Python Specific
-import base64,os,re,unicodedata,time,string,sys,urllib.request
+import base64,os,re,unicodedata,time,string,sys,urllib.request,threading
 import urllib.parse,urllib.error,json,datetime,zipfile,shutil
 import xml.etree.ElementTree as ET
 from datetime import date
 	#Addon Specific
-from resources.modules import control,tools,popup,speedtest,epg
+from resources.modules import control,tools,popup,speedtest,epg,trakt
 ##########################=VARIABLES=#######################################
 ADDON = xbmcaddon.Addon()
 ADDONPATH = ADDON.getAddonInfo("path")
@@ -250,6 +250,241 @@ def _telemetry_ping():
 		pass
 
 
+_RECONNECT_BACKOFFS = [3, 5, 8, 10, 15]
+
+class _LiveReconnectPlayer(xbmc.Player):
+	"""Add-on-scoped auto-reconnect for live streams started by this add-on."""
+
+	def __init__(self):
+		super().__init__()
+		self._lock = threading.Lock()
+		self._abort = threading.Event()
+		self.url = None
+		self.is_live = False
+		self.retries = 0
+		self.started_at = None
+		self.max_retries = 5
+
+	def track(self, url, is_live, trakt_type=None, trakt_payload=None):
+		with self._lock:
+			# Cancel any previous retry sequence.
+			self._abort.set()
+			self._abort = threading.Event()
+			self.url = url
+			self.is_live = bool(is_live)
+			self.retries = 0
+			self.started_at = time.time()
+			self.trakt_type = trakt_type
+			self.trakt_payload = trakt_payload
+			self.trakt_started = False
+			try:
+				self.max_retries = int(ADDON.getSetting('auto_reconnect_max_retries') or 5)
+			except Exception:
+				self.max_retries = 5
+
+	def _enabled(self):
+		try:
+			return ADDON.getSetting('auto_reconnect') == 'true'
+		except Exception:
+			return True
+
+	def onAVStarted(self):
+		with self._lock:
+			self.retries = 0
+			self.started_at = time.time()
+			# Playback stabilized: cancel any pending retry.
+			self._abort.set()
+			self._abort = threading.Event()
+			trakt_type = self.trakt_type
+			trakt_payload = self.trakt_payload
+			if trakt_type and trakt_payload and not self.trakt_started:
+				self.trakt_started = True
+		if trakt_type and trakt_payload and self.trakt_started:
+			try:
+				if trakt.is_enabled():
+					trakt.scrobble_start(trakt_type, trakt_payload)
+			except Exception:
+				pass
+
+	def onPlayBackPaused(self):
+		try:
+			with self._lock:
+				trakt_type = self.trakt_type
+				trakt_payload = self.trakt_payload
+				started = self.trakt_started
+			if started and trakt_type and trakt_payload and trakt.is_enabled():
+				progress = self._progress()
+				trakt.scrobble_pause(trakt_type, trakt_payload, progress)
+		except Exception:
+			pass
+
+	def onPlayBackResumed(self):
+		try:
+			with self._lock:
+				trakt_type = self.trakt_type
+				trakt_payload = self.trakt_payload
+				started = self.trakt_started
+			if started and trakt_type and trakt_payload and trakt.is_enabled():
+				progress = self._progress()
+				trakt.scrobble_start(trakt_type, trakt_payload)
+		except Exception:
+			pass
+
+	def _progress(self):
+		try:
+			player = xbmc.Player()
+			total = player.getTotalTime()
+			cur = player.getTime()
+			if total and total > 0:
+				return max(0.0, min(100.0, (cur / total) * 100.0))
+		except Exception:
+			pass
+		return 0.0
+
+	def onPlayBackStopped(self):
+		# User stop/zap: abort retries immediately.
+		try:
+			with self._lock:
+				trakt_type = self.trakt_type
+				trakt_payload = self.trakt_payload
+				started = self.trakt_started
+			if started and trakt_type and trakt_payload and trakt.is_enabled():
+				progress = self._progress()
+				trakt.scrobble_stop(trakt_type, trakt_payload, progress)
+		except Exception:
+			pass
+		with self._lock:
+			self._abort.set()
+			self.url = None
+			self.is_live = False
+			self.trakt_type = None
+			self.trakt_payload = None
+			self.trakt_started = False
+
+	def onPlayBackEnded(self):
+		self._handle_unexpected_stop()
+
+	def onPlayBackError(self):
+		self._handle_unexpected_stop()
+
+	def _handle_unexpected_stop(self):
+		try:
+			with self._lock:
+				trakt_type = self.trakt_type
+				trakt_payload = self.trakt_payload
+				started = self.trakt_started
+			if started and trakt_type and trakt_payload and trakt.is_enabled():
+				trakt.scrobble_stop(trakt_type, trakt_payload, 100.0)
+		except Exception:
+			pass
+		with self._lock:
+			if not self.is_live or not self.url:
+				return
+			if not self._enabled():
+				return
+			if self._abort.is_set():
+				return
+			started_at = self.started_at or time.time()
+			rapid = (time.time() - started_at) < 5.0
+			url = self.url
+			abort_event = self._abort
+			retries = self.retries
+			max_retries = self.max_retries
+
+		if retries >= max_retries:
+			try:
+				xbmcgui.Dialog().notification(ADDON_NAME, 'Live stream failed after %d retries' % max_retries, xbmcgui.NOTIFICATION_ERROR, 5000)
+			except Exception:
+				pass
+			with self._lock:
+				self._abort.set()
+			return
+
+		# Rapid crashes count faster toward the limit.
+		increment = 2 if rapid else 1
+		with self._lock:
+			self.retries = min(max_retries, self.retries + increment)
+			retries = self.retries
+
+		if retries >= max_retries:
+			try:
+				xbmcgui.Dialog().notification(ADDON_NAME, 'Live stream failed after %d retries' % max_retries, xbmcgui.NOTIFICATION_ERROR, 5000)
+			except Exception:
+				pass
+			with self._lock:
+				self._abort.set()
+			return
+
+		delay = _RECONNECT_BACKOFFS[min(retries - 1, len(_RECONNECT_BACKOFFS) - 1)]
+		try:
+			xbmc.log('%s: auto-reconnect in %ds (attempt %d/%d)' % (ADDON_ID, delay, retries, max_retries), LOG_NOTICE)
+		except Exception:
+			pass
+
+		def worker():
+			if abort_event.wait(delay):
+				return
+			if abort_event.is_set():
+				return
+			with self._lock:
+				if not self.is_live or self.url != url:
+					return
+			try:
+				stream_video(url, is_live=True)
+			except Exception:
+				pass
+
+		threading.Thread(target=worker, name='IPTVXC-Reconnect', daemon=True).start()
+
+_live_player = _LiveReconnectPlayer()
+
+def _migrate_on_update():
+	"""Clear stale bytecode/cache when the addon version changes.
+
+	Older releases shipped a playback watchdog + 30-second monitoring loop
+	that could survive across updates as stale __pycache__ bytecode and cause
+	pausing/seeking freezes.  Wipe those artifacts once per version change.
+	"""
+	try:
+		current_version = str(ADDON.getAddonInfo('version'))
+		marker_path = os.path.join(ADDONDATA, 'addon_version')
+		previous_version = ''
+		if os.path.exists(marker_path):
+			try:
+				with open(marker_path, 'r', encoding='utf-8') as marker_file:
+					previous_version = marker_file.read().strip()
+			except Exception:
+				previous_version = ''
+		if previous_version == current_version:
+			return
+		# Clear addon file cache (icons, content, host probes, etc.)
+		try:
+			tools.clear_addon_cache()
+		except Exception:
+			pass
+		# Remove stale compiled bytecode so Python recompiles from source.
+		for root, dirs, files in os.walk(PLUGIN, topdown=True):
+			if '__pycache__' in dirs:
+				try:
+					shutil.rmtree(os.path.join(root, '__pycache__'), ignore_errors=True)
+				except Exception:
+					pass
+		# Persist the new version marker.
+		try:
+			os.makedirs(ADDONDATA, exist_ok=True)
+			with open(marker_path, 'w', encoding='utf-8') as marker_file:
+				marker_file.write(current_version)
+		except Exception:
+			pass
+		# Recommend a full Kodi restart so stale in-memory modules are dropped.
+		try:
+			xbmcgui.Dialog().ok(ADDON_NAME,
+				'Addon updated to %s.\\nFor best results please restart Kodi.' % current_version)
+		except Exception:
+			pass
+	except Exception:
+		pass
+
 def home():
 	# Reaching the main menu ends the prior search session.  Until then its
 	# scope/query remain available so Kodi can rebuild results after playback.
@@ -428,6 +663,10 @@ def serieslist(url):
 			tools.addDirMeta(ser.get('name',''), player_api+'&action=get_series_info&series_id='+str(ser.get('series_id','')), 19, ser.get('cover',''), (ser.get('backdrop_path') or [''])[0] if ser.get('backdrop_path') else '', ser.get('plot',''), ser.get('releaseDate',''), str(ser.get('cast','')).split(), ser.get('rating_5based',''), ser.get('episode_run_time',''), ser.get('genre',''))
 		else:
 			tools.addDir(ser.get('name',''), player_api+'&action=get_series_info&series_id='+str(ser.get('series_id','')), 19, ser.get('cover',''), background, '')
+	try:
+		xbmcplugin.setContent(int(sys.argv[1]), 'tvshows')
+	except Exception:
+		pass
 
 def series_seasons(url):
 	raw = tools.OPEN_URL_CACHED(url, ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
@@ -444,6 +683,10 @@ def series_seasons(url):
 	info = ser_cat.get('info', {})
 	for season in ser_cat.get('episodes', {}):
 		tools.addDir('Season - '+str(season), url+'&season_number='+str(season), 20, info.get('cover',''), (info.get('backdrop_path') or [''])[0] if info.get('backdrop_path') else '', '')
+	try:
+		xbmcplugin.setContent(int(sys.argv[1]), 'seasons')
+	except Exception:
+		pass
 
 def season_list(url):
 	raw = tools.OPEN_URL_CACHED(url, ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
@@ -503,10 +746,34 @@ def season_list(url):
 		duration = ser_info.get('duration') or ''
 		container_extension = ep.get('container_extension') or 'mp4'
 		play = play_series+str(ep.get('id'))+'.'+container_extension
+		try:
+			season_int = int(season_number) if season_number is not None else None
+		except Exception:
+			season_int = None
+		try:
+			episode_num = int(ep.get('episode_num')) if ep.get('episode_num') not in (None, '') else None
+		except Exception:
+			episode_num = None
+		series_name = str(info.get('name') or info.get('title') or '').strip()
+		tmdb_id = ''
+		try:
+			tmdb_id = str(info.get('tmdb_id') or info.get('tmdb') or '').strip()
+		except Exception:
+			tmdb_id = ''
+		tools.save_episode_meta(play, {
+			'tvshowtitle': series_name,
+			'season': season_int,
+			'episode': episode_num,
+			'tmdb': tmdb_id,
+		})
 		if meta_on:
-			tools.addDirMeta(title, play, 4, cover, cover, plot, releasedate, str(info.get('cast','')).split(), info.get('rating_5based',''), str(duration), info.get('genre',''))
+			tools.addDirMeta(title, play, 4, '', cover, plot, releasedate, str(info.get('cast','')).split(), info.get('rating_5based',''), str(duration), info.get('genre',''), thumbimage=cover)
 		else:
-			tools.addDir(title, play, 4, cover, cover, '')
+			tools.addDir(title, play, 4, '', cover, '', thumbimage=cover)
+	try:
+		xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
+	except Exception:
+		pass
 def vod(url):
 	data = tools.OPEN_URL_CACHED(vod_url if url == 'vod' else buildcleanurl(url), ttl_minutes=tools.CONTENT_CACHE_TTL_MOVIES)
 	if not data:
@@ -984,11 +1251,34 @@ def apply_subtitles_for_playback(player_obj, url_arg, name_arg='', desc_arg=''):
 	except Exception as e:
 		xbmc.log(f'{ADDON_ID}: apply_subtitles failed: {e}', LOG_NOTICE)
 
-def stream_video(url, playback_name=None, playback_icon=None, playback_description=None):
+def stream_video(url, playback_name=None, playback_icon=None, playback_description=None, is_live=None):
 	url = buildcleanurl(url)
 	item_name = _clean_playback_name(playback_name) if playback_name is not None else (name or '')
 	item_icon = playback_icon or iconimage or icon
 	item_description = playback_description if playback_description is not None else (description or '')
+	if is_live is None:
+		is_live = ('/movie/' not in str(url).lower() and '/series/' not in str(url).lower())
+	# Optional native FFmpeg reconnect params for .ts streams (no timeshift).
+	stream_path = url
+	try:
+		lower_url = str(url).lower().split('?')[0]
+		if lower_url.endswith('.ts'):
+			timeshift_enabled = (ADDON.getSetting('live_timeshift_enabled') == 'true')
+			if not timeshift_enabled:
+				resilience_enabled = (ADDON.getSetting('ts_resilience_enabled') == 'true')
+				if resilience_enabled:
+					try:
+						delay = int(ADDON.getSetting('ts_reconnect_delay') or 20)
+					except Exception:
+						delay = 20
+					delay = max(10, min(30, delay))
+					opts = 'reconnect=1&reconnect_streamed=1&reconnect_at_eof=1&reconnect_delay_max=%d' % delay
+					if '|' in str(stream_path):
+						stream_path = str(stream_path) + '&' + opts
+					else:
+						stream_path = str(stream_path) + '|' + opts
+	except Exception:
+		pass
 	# Log to history and save as last played
 	tools.add_to_history(url, item_name, item_icon, item_description)
 	tools.save_last_played(url, item_name, item_icon, item_description)
@@ -996,11 +1286,84 @@ def stream_video(url, playback_name=None, playback_icon=None, playback_descripti
 	# This ListItem is handed directly to Kodi's player, so keep the default
 	# GUI locking behavior.  Using offscreen=True here can leave playback
 	# waiting for another GUI input before the video window is activated.
-	liz = xbmcgui.ListItem(path=str(url))
-	liz.setArt({'icon': item_icon, 'thumb': item_icon})
-	liz.setInfo(type='Video', infoLabels={'Title': item_name, 'Plot': item_description, 'TVShowTitle': item_name})
+	liz = xbmcgui.ListItem(path=str(stream_path))
+	# Always use the local addon icon for playback art. Remote channel icons
+	# can stall Kodi's texture cache / player on stop and seek.
+	liz.setArt({'icon': icon, 'thumb': icon})
+	_info_labels = {'Title': item_name, 'Plot': item_description, 'TVShowTitle': item_name}
+	# Provide metadata so the Trakt service addon can scrobble automatically.
+	_lower = str(url).lower()
+	if '/movie/' in _lower:
+		_info_labels['mediatype'] = 'movie'
+		_tmdb_match = re.search(r'TMDB_ID[:\s]+(\d+)', str(item_description or ''))
+		if _tmdb_match:
+			try:
+				liz.setUniqueIDs({'tmdb': _tmdb_match.group(1)})
+			except Exception:
+				pass
+	elif '/series/' in _lower:
+		_info_labels['mediatype'] = 'episode'
+		meta = {}
+		try:
+			meta = tools.load_episode_meta(url) or {}
+		except Exception:
+			meta = {}
+		tvshowtitle = meta.get('tvshowtitle') or item_name
+		_info_labels['TVShowTitle'] = tvshowtitle
+		if meta.get('season') is not None:
+			_info_labels['season'] = int(meta['season'])
+		if meta.get('episode') is not None:
+			_info_labels['episode'] = int(meta['episode'])
+		# Fallback parse from title if meta missing.
+		if 'season' not in _info_labels or 'episode' not in _info_labels:
+			_m = re.search(r'S(\d+)E(\d+)', str(item_name or ''), re.IGNORECASE)
+			if _m:
+				_info_labels['season'] = int(_m.group(1))
+				_info_labels['episode'] = int(_m.group(2))
+		if meta.get('tmdb'):
+			try:
+				liz.setUniqueIDs({'tmdb': str(meta['tmdb'])})
+			except Exception:
+				pass
+	liz.setInfo(type='Video', infoLabels=_info_labels)
 	liz.setProperty('IsPlayable', 'true')
 	liz.setContentLookup(False)
+	# Per-ListItem inputstream.adaptive for compatible HLS/DASH live streams.
+	# Direct/MPEG-TS streams are left untouched (no custom byte buffer).
+	try:
+		lower_url = str(url).lower().split('?')[0]
+		if lower_url.endswith('.m3u8'):
+			liz.setProperty('inputstream', 'inputstream.adaptive')
+			liz.setProperty('inputstream.adaptive.manifest_type', 'hls')
+			liz.setProperty('inputstream.adaptive.live', 'true')
+		elif lower_url.endswith('.mpd'):
+			liz.setProperty('inputstream', 'inputstream.adaptive')
+			liz.setProperty('inputstream.adaptive.manifest_type', 'mpd')
+			liz.setProperty('inputstream.adaptive.live', 'true')
+		elif lower_url.endswith('.ts'):
+			# Optional live TV pause / timeshift via inputstream.ffmpegdirect.
+			timeshift_enabled = False
+			try:
+				timeshift_enabled = (ADDON.getSetting('live_timeshift_enabled') == 'true')
+			except Exception:
+				timeshift_enabled = False
+			if timeshift_enabled:
+				# inputstream.ffmpegdirect is installed on this system; set
+				# properties directly so Kodi uses it for timeshift.
+				liz.setProperty('inputstream', 'inputstream.ffmpegdirect')
+				liz.setProperty('inputstream.ffmpegdirect.open_mode', 'ffmpeg')
+				liz.setProperty('inputstream.ffmpegdirect.is_realtime_stream', 'true')
+				liz.setProperty('inputstream.ffmpegdirect.stream_mode', 'timeshift')
+		if lower_url.endswith(('.m3u8', '.mpd')):
+			try:
+				import inputstreamhelper
+				media_type = 'mpd' if lower_url.endswith('.mpd') else 'hls'
+				helper = inputstreamhelper.Helper(media_type, drm=False)
+				helper.check_inputstream()
+			except Exception:
+				pass
+	except Exception:
+		pass
 	# Resolve immediately; playback must never wait on an EPG request.
 	xbmcplugin.setResolvedUrl(int(sys.argv[1]), True, liz)
 	xbmc.log(f'{ADDON_ID}: stream_video() resolved OK', LOG_NOTICE)
@@ -1010,6 +1373,34 @@ def stream_video(url, playback_name=None, playback_icon=None, playback_descripti
 	xbmc.sleep(200)
 	xbmc.executebuiltin('Dialog.Close(busydialog)')
 	xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
+	# Build an optional Trakt scrobble payload for movies/episodes.
+	trakt_type = None
+	trakt_payload = None
+	try:
+		if trakt.is_enabled():
+			lower = str(url).lower()
+			if '/movie/' in lower:
+				trakt_type = 'movie'
+				tmdb_match = re.search(r'TMDB_ID[:\s]+(\d+)', str(item_description or ''))
+				if tmdb_match:
+					trakt_payload = {'ids': {'tmdb': int(tmdb_match.group(1))}}
+				else:
+					trakt_payload = {'title': item_name}
+			elif '/series/' in lower:
+				trakt_type = 'episode'
+				m = re.search(r'S(\d+)E(\d+)', str(item_name or ''), re.IGNORECASE)
+				if m:
+					season = int(m.group(1))
+					episode = int(m.group(2))
+					show_title = re.sub(r'\s*S\d+E\d+.*', '', str(item_name or '')).strip() or item_name
+					trakt_payload = {'show': {'title': show_title}, 'season': season, 'number': episode}
+	except Exception:
+		pass
+	# Track this stream for add-on-scoped auto-reconnect (live only).
+	try:
+		_live_player.track(url, bool(is_live), trakt_type, trakt_payload)
+	except Exception:
+		pass
 	player = xbmc.Player()
 	_ensure_fullscreen_playback(player)
 	# Apply subtitles once Kodi has opened the stream.  Do not leave resident
@@ -1470,6 +1861,12 @@ def manage_profiles():
 				tools.delete_profile(idx)
 				tools.LogNotify(ADDON_NAME, 'Profile deleted')
 
+# Wipe stale state from previous addon versions (runs once per version).
+try:
+	_migrate_on_update()
+except Exception:
+	pass
+
 params=tools.get_params()
 url=None
 name=None
@@ -1694,12 +2091,18 @@ elif mode==37:
 		tools.save_last_played(stream_url, ch_name or '', ch_icon or icon, '')
 		display_title = now_title if now_title else (ch_name or '')
 		liz = xbmcgui.ListItem(path=str(stream_url))
-		liz.setArt({'icon': ch_icon or icon, 'thumb': ch_icon or icon})
+		# Use the local addon icon for playback art to avoid remote-icon stalls
+		# during pause/seek/stop.
+		liz.setArt({'icon': icon, 'thumb': icon})
 		liz.setInfo(type='Video', infoLabels={'Title': display_title, 'Plot': now_desc, 'TVShowTitle': ch_name or ''})
 		liz.setProperty('IsPlayable', 'true')
 		liz.setContentLookup(False)
 		player = xbmc.Player()
 		player.play(stream_url, liz)
+		try:
+			_live_player.track(stream_url, True)
+		except Exception:
+			pass
 		_ensure_fullscreen_playback(player)
 		try:
 			apply_subtitles_for_playback(player, stream_url, ch_name or '', now_desc)

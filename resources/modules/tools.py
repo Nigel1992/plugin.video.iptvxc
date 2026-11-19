@@ -48,7 +48,7 @@ def refresh_epg():
 	#Kodi Specific
 import xbmcplugin,xbmcgui, xbmcaddon,xbmcvfs
 	#Python Specific
-import os,re,sys,xbmc,json,base64,string,urllib.request,urllib.parse,urllib.error,urllib.parse,shutil,socket,time,hashlib
+import os,re,sys,xbmc,json,base64,string,urllib.request,urllib.parse,urllib.error,urllib.parse,shutil,socket,time,hashlib,subprocess,signal
 from urllib.parse import urlparse
 	#Addon Specific
 from urllib.request import Request, urlopen
@@ -272,7 +272,7 @@ def regex_get_us(text, start_with, end_with):
 	r = re.findall("(?i)(" + start_with + ".+?[UK: Sky Sports].+?" + end_with + ")", text)
 	return r
 	
-def addDir(name,url,mode,iconimage,fanart,description):
+def addDir(name,url,mode,iconimage,fanart,description,thumbimage=None):
 	# Use the local addon icon in the plugin URL parameter to prevent Kodi's
 	# internal CCurlFile from fetching a remote icon URL on stop/resume,
 	# which causes a 30-second UI freeze when the icon server is slow/down.
@@ -284,10 +284,31 @@ def addDir(name,url,mode,iconimage,fanart,description):
 		pass
 	ok=True
 	# Use safe_icon to avoid Kodi blocking on unreachable icon servers
-	safe_img = safe_icon(iconimage)
+	if iconimage:
+		safe_img = safe_icon(iconimage)
+	else:
+		safe_img = ''
+	if thumbimage is None:
+		thumbimage = iconimage
+	if thumbimage:
+		safe_thumb = safe_icon(thumbimage)
+	else:
+		safe_thumb = safe_img
 	liz=xbmcgui.ListItem(name)
-	liz.setArt({'icon':safe_img, 'thumb':safe_img})
-	liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description,})
+	liz.setArt({'icon': safe_img, 'thumb': safe_thumb})
+	_info_labels = {"Title": name, "Plot": description}
+	if is_watched(url):
+		_info_labels["PlayCount"] = 1
+		_info_labels["playcount"] = 1
+		try:
+			liz.getVideoInfoTag().setPlayCount(1)
+		except Exception:
+			pass
+		try:
+			liz.setProperty('Overlay', 'OverlayWatched.png')
+		except Exception:
+			pass
+	liz.setInfo( type="Video", infoLabels=_info_labels)
 	liz.setProperty('fanart_image', fanart)
 	# Favorites context menu
 	cm = []
@@ -314,7 +335,7 @@ def addDir(name,url,mode,iconimage,fanart,description):
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True)
 	return ok
 	
-def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runtime,genre):
+def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runtime,genre,thumbimage=None):
 	# Extract TMDB ID from description if available
 	tmdb_id = ''
 	if description:
@@ -329,28 +350,36 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 	u=sys.argv[0]+"?url="+urllib.parse.quote_plus(str(url))+"&mode="+str(mode)+"&name="+urllib.parse.quote_plus(str(name))+"&iconimage="+urllib.parse.quote_plus(str(ICON))+"&description="+urllib.parse.quote_plus(str(description))+"&year="+urllib.parse.quote_plus(str(year))+"&tmdb_id="+urllib.parse.quote_plus(str(tmdb_id))
 	ok=True
 	# Use safe_icon to avoid Kodi blocking on unreachable icon servers
-	safe_img = safe_icon(iconimage)
+	if iconimage:
+		safe_img = safe_icon(iconimage)
+	else:
+		safe_img = ''
+	if thumbimage is None:
+		thumbimage = iconimage
+	if thumbimage:
+		safe_thumb = safe_icon(thumbimage)
+	else:
+		safe_thumb = safe_img
 	liz=xbmcgui.ListItem(name)
-	liz.setArt({'icon':safe_img, 'thumb':safe_img})
-	liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description,"Rating":rating,"Year":year,"Duration":runtime,"Cast":cast,"Genre":genre})
+	liz.setArt({'icon': safe_img, 'thumb': safe_thumb})
+	_meta_info_labels = {"Title": name, "Plot": description, "Rating": rating, "Year": year, "Duration": runtime, "Cast": cast, "Genre": genre}
+	if is_watched(url):
+		_meta_info_labels["PlayCount"] = 1
+		_meta_info_labels["playcount"] = 1
+		try:
+			liz.getVideoInfoTag().setPlayCount(1)
+		except Exception:
+			pass
+		try:
+			liz.setProperty('Overlay', 'OverlayWatched.png')
+		except Exception:
+			pass
+	liz.setInfo( type="Video", infoLabels=_meta_info_labels)
 	liz.setProperty('fanart_image', fanart)
 	if mode not in (19, 20):
 		liz.setProperty("IsPlayable","true")
 	cm = []
 	cm.append(('Movie Information', 'XBMC.Action(Info)'))
-	
-	# Add Trakt context menu items if enabled
-	try:
-		if GET_SET.getSetting('trakt_enabled') == 'true':
-			# Add to Trakt Watchlist
-			trakt_watchlist_url = sys.argv[0]+"?url=TRAKT_WATCHLIST&mode=23&name="+urllib.parse.quote_plus(str(name))+"&year="+str(year)
-			cm.append(('Add to Trakt Watchlist', 'RunPlugin('+trakt_watchlist_url+')'))
-			
-			# Mark as Watched on Trakt
-			trakt_watched_url = sys.argv[0]+"?url=TRAKT_WATCHED&mode=23&name="+urllib.parse.quote_plus(str(name))+"&year="+str(year)
-			cm.append(('Mark as Watched on Trakt', 'RunPlugin('+trakt_watched_url+')'))
-	except:
-		pass
 	
 	# Favorites context menu
 	fav_url = sys.argv[0] + "?mode=31&url=" + urllib.parse.quote_plus(str(url)) + "&name=" + urllib.parse.quote_plus(str(name)) + "&iconimage=" + urllib.parse.quote_plus(str(iconimage)) + "&description=" + urllib.parse.quote_plus(str(description)) + "&fav_mode=" + str(mode)
@@ -1039,6 +1068,40 @@ def add_to_history(url, name, iconimage, description):
         max_items = 25
     history = history[:max_items]
     save_history(history)
+
+def is_watched(url):
+    """Return True if *url* exists in the watch history."""
+    try:
+        history = load_history()
+        return any(h.get('url') == url for h in history)
+    except Exception:
+        return False
+
+EPISODE_META_FILE = os.path.join(ADDON_DATA, 'episode_meta.json')
+
+def load_episode_meta(url):
+    try:
+        if os.path.exists(EPISODE_META_FILE):
+            with open(EPISODE_META_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                return data.get(str(url)) or {}
+    except Exception:
+        pass
+    return {}
+
+def save_episode_meta(url, meta):
+    try:
+        data = {}
+        if os.path.exists(EPISODE_META_FILE):
+            with open(EPISODE_META_FILE, 'r', encoding='utf-8') as f:
+                loaded = json.load(f)
+            if isinstance(loaded, dict):
+                data = loaded
+        data[str(url)] = meta or {}
+        _atomic_write_json(EPISODE_META_FILE, data)
+    except Exception:
+        pass
 
 def clear_history():
     save_history([])

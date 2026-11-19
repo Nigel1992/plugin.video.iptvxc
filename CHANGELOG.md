@@ -1,3 +1,24 @@
+# Version 3.9.0 (2026-11-20)
+
+### Major update
+- Live TV pause/timeshift for .ts via inputstream.ffmpegdirect.
+- .ts resilience with configurable reconnect delay.
+- Auto-reconnect for live streams with backoff and rapid-crash counting.
+- Watched indicators and native Kodi overlays in lists.
+- Trakt integration via script.trakt metadata + optional direct scrobbling.
+- Update-safe cleanup of stale bytecode/cache.
+
+# Version 3.8.12 (2026-11-19)
+
+### ▶️ Playback / lists
+- Added watched markers: episodes and other items that exist in watch history now report `PlayCount` to Kodi, so supported skins show the normal watched overlay while keeping the thumbnail.
+
+# Version 3.8.11 (2026-11-19)
+
+### 🧹 Update safety
+- Added one-time, version-gated cleanup on update: clears stale addon cache and removes old `__pycache__` bytecode so a previously installed playback watchdog/30-second monitoring loop can no longer survive across updates.
+- Prompts the user to fully restart Kodi after the cleanup for best results.
+
 # Version 3.8.10 (2026-11-19)
 
 ### 🐛 Bug fixes (issue #9)

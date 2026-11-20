@@ -144,9 +144,16 @@ _CONTENT_TTL_TEXT_MAP = {
 	'1 hour': 60, '6 hours': 360, '12 hours': 720,
 	'1 day': 1440, '7 days': 10080,
 }
+_TTL_MINUTES_BY_INDEX = [5, 15, 30, 60, 360, 720, 1440, 10080]
+
 def _get_content_ttl(setting_id, default_minutes):
 	try:
-		val = GET_SET.getSetting(setting_id) or ''
+		val = (GET_SET.getSetting(setting_id) or '').strip()
+		# Enum settings return their selected index as a string.
+		if val.isdigit():
+			idx = int(val)
+			if 0 <= idx < len(_TTL_MINUTES_BY_INDEX):
+				return _TTL_MINUTES_BY_INDEX[idx]
 		return _CONTENT_TTL_TEXT_MAP.get(val, default_minutes)
 	except Exception:
 		return default_minutes
@@ -272,7 +279,7 @@ def regex_get_us(text, start_with, end_with):
 	r = re.findall("(?i)(" + start_with + ".+?[UK: Sky Sports].+?" + end_with + ")", text)
 	return r
 	
-def addDir(name,url,mode,iconimage,fanart,description,thumbimage=None):
+def addDir(name,url,mode,iconimage,fanart,description,thumbimage=None,live=False,mediatype=None):
 	# Use the local addon icon in the plugin URL parameter to prevent Kodi's
 	# internal CCurlFile from fetching a remote icon URL on stop/resume,
 	# which causes a 30-second UI freeze when the icon server is slow/down.
@@ -297,7 +304,11 @@ def addDir(name,url,mode,iconimage,fanart,description,thumbimage=None):
 	liz=xbmcgui.ListItem(name)
 	liz.setArt({'icon': safe_img, 'thumb': safe_thumb})
 	_info_labels = {"Title": name, "Plot": description}
-	if is_watched(url):
+	if mediatype:
+		_info_labels['mediatype'] = mediatype
+		_info_labels['MediaType'] = mediatype
+	# Watched markers apply to any item except Live TV channels.
+	if (not live) and is_watched(url):
 		_info_labels["PlayCount"] = 1
 		_info_labels["playcount"] = 1
 		try:
@@ -322,20 +333,36 @@ def addDir(name,url,mode,iconimage,fanart,description,thumbimage=None):
 				cm.append(('[COLOR gold]Add to Favorites[/COLOR]', 'RunPlugin(' + fav_url + ')'))
 	except Exception:
 		pass
+	# Watch Trailer context menu for movie/series items.
+	try:
+		if (not live) and int(mode) in (4, 19):
+			trailer_url = sys.argv[0] + "?mode=40&name=" + urllib.parse.quote_plus(str(name)) + "&description=" + urllib.parse.quote_plus(str(description))
+			cm.append(('Watch Trailer', 'RunPlugin(' + trailer_url + ')'))
+	except Exception:
+		pass
+	# Watched-state context menu toggle.
+	try:
+		if not live:
+			if is_watched(url):
+				unwatch_url = sys.argv[0] + "?mode=41&url=" + urllib.parse.quote_plus(str(url)) + "&name=" + urllib.parse.quote_plus(str(name))
+				cm.append(('Mark as Unwatched', 'RunPlugin(' + unwatch_url + ')'))
+			else:
+				watch_url = sys.argv[0] + "?mode=42&url=" + urllib.parse.quote_plus(str(url)) + "&name=" + urllib.parse.quote_plus(str(name)) + "&iconimage=" + urllib.parse.quote_plus(str(iconimage)) + "&description=" + urllib.parse.quote_plus(str(description))
+				cm.append(('Mark as Watched', 'RunPlugin(' + watch_url + ')'))
+	except Exception:
+		pass
 	if cm:
 		liz.addContextMenuItems(cm)
 	if mode in (4, 35):
 		liz.setProperty("IsPlayable","true")
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
 	elif mode in (7, 10, 17, 21, 37):
-		liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description})
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
 	else:
-		liz.setInfo( type="Video", infoLabels={"Title": name,"Plot":description})
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True)
 	return ok
 	
-def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runtime,genre,thumbimage=None):
+def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runtime,genre,thumbimage=None,live=False):
 	# Extract TMDB ID from description if available
 	tmdb_id = ''
 	if description:
@@ -363,7 +390,7 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 	liz=xbmcgui.ListItem(name)
 	liz.setArt({'icon': safe_img, 'thumb': safe_thumb})
 	_meta_info_labels = {"Title": name, "Plot": description, "Rating": rating, "Year": year, "Duration": runtime, "Cast": cast, "Genre": genre}
-	if is_watched(url):
+	if (not live) and is_watched(url):
 		_meta_info_labels["PlayCount"] = 1
 		_meta_info_labels["playcount"] = 1
 		try:
@@ -388,6 +415,26 @@ def addDirMeta(name,url,mode,iconimage,fanart,description,year,cast,rating,runti
 	else:
 		cm.append(('[COLOR gold]Add to Favorites[/COLOR]', 'RunPlugin(' + fav_url + ')'))
 	
+	# Watch Trailer context menu
+	try:
+		if not live:
+			trailer_url = sys.argv[0] + "?mode=40&name=" + urllib.parse.quote_plus(str(name)) + "&description=" + urllib.parse.quote_plus(str(description))
+			cm.append(('Watch Trailer', 'RunPlugin(' + trailer_url + ')'))
+	except Exception:
+		pass
+
+	# Watched-state context menu toggle.
+	try:
+		if not live:
+			if is_watched(url):
+				unwatch_url = sys.argv[0] + "?mode=41&url=" + urllib.parse.quote_plus(str(url)) + "&name=" + urllib.parse.quote_plus(str(name))
+				cm.append(('Mark as Unwatched', 'RunPlugin(' + unwatch_url + ')'))
+			else:
+				watch_url = sys.argv[0] + "?mode=42&url=" + urllib.parse.quote_plus(str(url)) + "&name=" + urllib.parse.quote_plus(str(name)) + "&iconimage=" + urllib.parse.quote_plus(str(iconimage)) + "&description=" + urllib.parse.quote_plus(str(description))
+				cm.append(('Mark as Watched', 'RunPlugin(' + watch_url + ')'))
+	except Exception:
+		pass
+
 	liz.addContextMenuItems(cm)
 	if mode==19 or mode==20:
 		ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True)
@@ -1068,6 +1115,15 @@ def add_to_history(url, name, iconimage, description):
         max_items = 25
     history = history[:max_items]
     save_history(history)
+
+def remove_from_history(url):
+    """Remove *url* from the watch history (mark as unwatched)."""
+    try:
+        history = load_history()
+        history = [h for h in history if h.get('url') != url]
+        save_history(history)
+    except Exception:
+        pass
 
 def is_watched(url):
     """Return True if *url* exists in the watch history."""

@@ -27,20 +27,7 @@ Optimized for **Kodi v21 (Omega)** & **Python 3**
 
 XCUI Streams is a fast, reliable XC/XCUI playback add-on for Kodi 21 (Omega). It provides modern parsing, persistent caching, clean navigation, and a built-in TV guide, optimized for inconsistent provider APIs.
 
-**Quick links:** [Latest release](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest) · [Installation](#-installation) · [Troubleshooting](#-troubleshooting) · [Issues](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
-
----
-
-## 📊 Usage statistics
-
-![Total Downloads (all releases)](https://img.shields.io/github/downloads/Nigel1992/plugin.video.iptvxc/total?label=Total%20Downloads&color=brightgreen&style=for-the-badge)
-![Telemetry Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstalls&query=%24.value&label=Telemetry%20Installs&color=blue&style=for-the-badge)
-![Today's Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstall-2026-11-19&query=%24.value&label=Today%27s%20Installs&color=orange&style=for-the-badge)
-![Today's Active](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Factive-2026-11-19&query=%24.value&label=Today%27s%20Active&color=blue&style=for-the-badge)
-![Daily Active (Cumulative)](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Fdaily&query=%24.value&label=Daily%20Active%20(Cumulative)&color=lightgrey&style=for-the-badge)
-
-Total installs and daily active counts are tracked via an anonymous opt-out ping (enabled by default).
-Raw counters: [installs](https://abacus.jasoncameron.dev/get/iptvxc/installs) · [daily](https://abacus.jasoncameron.dev/get/iptvxc/daily)
+**Quick links:** [Latest release](https://github.com/Nigel1992/plugin.video.iptvxc/releases/latest) · [Installation](#-installation) · [Features](#-features) · [Troubleshooting](#-troubleshooting) · [Issues](https://github.com/Nigel1992/plugin.video.iptvxc/issues)
 
 ---
 
@@ -60,6 +47,10 @@ Raw counters: [installs](https://abacus.jasoncameron.dev/get/iptvxc/installs) ·
 - **Recently Watched History** — logs the last 25 streams (configurable); clearable from Extras
 - **Multi-Server Profiles** — save, switch, and delete provider credentials (cache auto-cleared on switch)
 - **Last Played** quick-resume item at the top of home
+- **Live pause/timeshift** on supported `.ts` streams
+- **Auto-reconnect** for live streams with progressive backoff
+- **Watched indicators** in episode lists
+- **Trakt scrobbling** via the separate `script.trakt` addon
 
 ---
 
@@ -95,37 +86,7 @@ Raw counters: [installs](https://abacus.jasoncameron.dev/get/iptvxc/installs) ·
 
 ---
 
-## 🔒 Privacy & opt-out
-
-XCUI Streams can send anonymous usage pings to help gauge adoption. **Enabled by default (opt-out).**
-
-- Pings: one per install (total installs) and one per day per install (daily active).
-- No credentials, personal data, or device identifiers are sent.
-- A random anonymous ID is generated and stored locally; it is never transmitted.
-- Toggle: **Settings → Features → Send anonymous usage ping (opt-out)**
-- Counter endpoints are configurable in Settings → Features.
-- Disable the setting to stop pinging.
-
----
-
-## 🛠️ Troubleshooting
-
-- **No content visible?** Verify provider credentials and network connectivity.
-- **Missing metadata:** Normal for some providers.
-- **Deprecation warnings:** `ListItem.setInfo()` warnings do not affect playback.
-- **Provider differences:** Not all providers share the same API; open an issue with your host if something breaks.
-
----
-
-## 📝 Release History
-
-See the full changelog: [CHANGELOG.md](CHANGELOG.md)
-
----
-
-## 🤝 Contributing
-
-### Features & how to use
+## 🧩 Features & how to use
 
 <details>
 <summary><b>Pause live TV (timeshift)</b></summary>
@@ -174,17 +135,56 @@ See the full changelog: [CHANGELOG.md](CHANGELOG.md)
 
 </details>
 
-### Trakt setup (via script.trakt)
-1. Install **script.trakt** from the Kodi repository and authorize it with your Trakt account.
-2. In this addon: `Settings` → `Trakt` → enable **Enable Trakt (via script.trakt addon)**.
-3. In script.trakt settings, make sure **Exclude Plugin**, **Exclude HTTP**, and **Exclude Script** are disabled so this addon's streams are not skipped.
-4. Play a movie or episode; script.trakt will scrobble automatically using the metadata provided by this addon.
+---
 
-Issues and PRs are welcome. Please avoid sharing provider credentials publicly. Include Kodi version, platform, and logs when reporting bugs.
+## 🔒 Privacy & opt-out
+
+XCUI Streams can send anonymous usage pings to help gauge adoption. **Enabled by default (opt-out).**
+
+- Pings: one per install (total installs) and one per day per install (daily active).
+- No credentials, personal data, or device identifiers are sent.
+- A random anonymous ID is generated and stored locally; it is never transmitted.
+- Toggle: **Settings → Features → Send anonymous usage ping (opt-out)**
+- Counter endpoints are configurable in Settings → Features.
+- Disable the setting to stop pinging.
+
+---
+
+## 🛠️ Troubleshooting
+
+- **No content visible?** Verify provider credentials and network connectivity.
+- **Missing metadata:** Normal for some providers.
+- **Deprecation warnings:** `ListItem.setInfo()` warnings do not affect playback.
+- **Provider differences:** Not all providers share the same API; open an issue with your host if something breaks.
+
+---
+
+## 📊 Usage statistics
+
+![Total Downloads (all releases)](https://img.shields.io/github/downloads/Nigel1992/plugin.video.iptvxc/total?label=Total%20Downloads&color=brightgreen&style=for-the-badge)
+![Telemetry Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstalls&query=%24.value&label=Telemetry%20Installs&color=blue&style=for-the-badge)
+![Today's Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstall-2026-11-19&query=%24.value&label=Today%27s%20Installs&color=orange&style=for-the-badge)
+![Today's Active](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Factive-2026-11-19&query=%24.value&label=Today%27s%20Active&color=blue&style=for-the-badge)
+![Daily Active (Cumulative)](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Fdaily&query=%24.value&label=Daily%20Active%20(Cumulative)&color=lightgrey&style=for-the-badge)
+
+Total installs and daily active counts are tracked via an anonymous opt-out ping (enabled by default).
+Raw counters: [installs](https://abacus.jasoncameron.dev/get/iptvxc/installs) · [daily](https://abacus.jasoncameron.dev/get/iptvxc/daily)
+
+---
+
+## 📝 Release History
+
+See the full changelog: [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## 🤝 Contributing
 
 - **Report bugs:** use the `bug` label with reproduction steps.
 - **Request features:** use the `enhancement` label.
 - **Contribute code:** submit a PR referencing the related issue.
+
+Issues and PRs are welcome. Please avoid sharing provider credentials publicly. Include Kodi version, platform, and logs when reporting bugs.
 
 ---
 

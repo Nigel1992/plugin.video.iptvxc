@@ -1,11 +1,7 @@
-# Version 3.9.4 (2026-11-20)
-
-### UX
-- Show a "what's new" dialog after an update (restart recommended).
-
 # Version 3.9.0 (2026-11-20)
 
 ### Major update
+- Show a "what's new" dialog after an update.
 - Live TV pause/timeshift for .ts via inputstream.ffmpegdirect.
 - .ts resilience with configurable reconnect delay.
 - Auto-reconnect for live streams with backoff and rapid-crash counting.

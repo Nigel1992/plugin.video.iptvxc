@@ -479,13 +479,13 @@ def _migrate_on_update():
 		# Show a short "what's new" dialog after an update.
 		try:
 			whats_new = (
-				'Updated to %s.\n\n'
-				'New:\n'
-				'- .ts live pause/timeshift via inputstream.ffmpegdirect\n'
-				'- .ts resilience and auto-reconnect with backoff\n'
-				'- Native watched indicators in episode lists\n'
-				'- Trakt via script.trakt (enable in settings)\n\n'
-				'For best results, restart Kodi.'
+				'XCUI Streams has been updated to version %s.\n\n'
+				'What is new:\n'
+				'- You can now pause live TV (on supported channels).\n'
+				'- If a live stream stops, the addon will try to reconnect by itself.\n'
+				'- Watched episodes now show a checkmark in lists.\n'
+				'- Trakt scrobbling is available (enable it in Settings if you use Trakt).\n\n'
+				'If anything looks odd, restart Kodi once.'
 			) % current_version
 			xbmcgui.Dialog().textviewer(ADDON_NAME, whats_new)
 		except Exception:

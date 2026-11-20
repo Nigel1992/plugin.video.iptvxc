@@ -34,6 +34,7 @@ XCUI Streams is a fast, reliable XC/XCUI playback add-on for Kodi 21 (Omega). It
 ## ✨ Features
 
 - Fast Live / VOD / Series / Catch-up navigation with persistent file-based caching
+- **Live TV [Filtered]** menu to filter categories by text
 - Configurable cache expiry per content type (Settings → Cache)
 - TV Series with seasons and episodes
 - Catch-up TV (provider-dependent)

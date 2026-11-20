@@ -2,6 +2,7 @@
 
 ### Major update
 - Show a "what's new" dialog after an update.
+- Added Live TV [Filtered] menu with configurable category filter.
 - Live TV pause/timeshift for .ts via inputstream.ffmpegdirect.
 - .ts resilience with configurable reconnect delay.
 - Auto-reconnect for live streams with backoff and rapid-crash counting.

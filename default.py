@@ -484,7 +484,8 @@ def _migrate_on_update():
 				'- You can now pause live TV (on supported channels).\n'
 				'- If a live stream stops, the addon will try to reconnect by itself.\n'
 				'- Watched episodes now show a checkmark in lists.\n'
-				'- Trakt scrobbling is available (enable it in Settings if you use Trakt).\n\n'
+				'- Trakt scrobbling is available (enable it in Settings if you use Trakt).\n'
+				'- New "Live TV [Filtered]" menu to filter categories by text.\n\n'
 				'If anything looks odd, restart Kodi once.'
 			) % current_version
 			xbmcgui.Dialog().textviewer(ADDON_NAME, whats_new)

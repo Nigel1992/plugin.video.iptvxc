@@ -479,15 +479,15 @@ def _migrate_on_update():
 		# Show a short "what's new" dialog after an update.
 		try:
 			whats_new = (
-				'Updated to %s.\\n\\n'
-				'New:\\n'
-				'- .ts live pause/timeshift via inputstream.ffmpegdirect\\n'
-				'- .ts resilience and auto-reconnect with backoff\\n'
-				'- Native watched indicators in episode lists\\n'
-				'- Trakt via script.trakt (enable in settings)\\n\\n'
+				'Updated to %s.\n\n'
+				'New:\n'
+				'- .ts live pause/timeshift via inputstream.ffmpegdirect\n'
+				'- .ts resilience and auto-reconnect with backoff\n'
+				'- Native watched indicators in episode lists\n'
+				'- Trakt via script.trakt (enable in settings)\n\n'
 				'For best results, restart Kodi.'
 			) % current_version
-			xbmcgui.Dialog().ok(ADDON_NAME, whats_new)
+			xbmcgui.Dialog().textviewer(ADDON_NAME, whats_new)
 		except Exception:
 			pass
 	except Exception:

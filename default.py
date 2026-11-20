@@ -99,6 +99,7 @@ iconrecent = os.path.join(MEDIA, 'icon_RECENTLY_WATCHED.png')
 icon_lastplayed = os.path.join(MEDIA, 'icon_LAST_PLAYED.png')
 iconaccount = os.path.join(MEDIA, 'icon_ACCOUNT_INFO.png')
 iconlive = os.path.join(MEDIA, 'icon_LIVE_TV.png')
+iconlivefiltered = os.path.join(MEDIA, 'icon_LIVE_TV_FILTERED.png')
 iconMoviesod = os.path.join(MEDIA, 'icon_MOVIES_VOD.png')
 iconTvseries = os.path.join(MEDIA, 'icon_SERIES.png')
 icontvguide = os.path.join(MEDIA, 'icon_TV_GUIDE.png')
@@ -528,12 +529,12 @@ def home():
 			if ago:
 				label = '[B][COLOR lime]\u25b6 Last Played (%s): %s[/COLOR][/B]' % (ago, channel_name)
 			# Always use the provided local icon for Last Played so it displays
-			tools.addDir(label, last['url'], 35, icon_lastplayed, background, '')
+			tools.addDir(label, last['url'], 35, icon_lastplayed, background, '', live=(tools.classify_favorite(None, last.get('url',''), last.get('description',''), last.get('name','')) == 'live'))
 	tools.addDir('Favorites','url',30,iconfavorites,background,'')
 	tools.addDir('Recently Watched','url',32,iconrecent,background,'')
 	tools.addDir('Account Information','url',6,iconaccount,background,'')
 	tools.addDir('Live TV','live',1,iconlive,background,'')
-	tools.addDir('Live TV [Filtered]','live_filtered',1,iconlive,background,'')
+	tools.addDir('Live TV [Filtered]','live_filtered',1,iconlivefiltered,background,'')
 	tools.addDir('Movies/VOD','vod',3,iconMoviesod,background,'')
 	tools.addDir('Series','live',18,iconTvseries,background,'')
 	tools.addDir('[COLOR FF42A5F5][B]TV Guide[/B][/COLOR]','epg',37,icontvguide,background,'')
@@ -643,7 +644,7 @@ def Livelist(url):
 		d = ch.findtext('description', default='')
 		desc = tools.b64(d) if d else 'No Info Available'
 		if not hidexxx or (hidexxx and not any(tag in ch_name for tag in adult_tags)):
-			tools.addDir(ch_name, url1, 4, thumb, background, desc)
+			tools.addDir(ch_name, url1, 4, thumb, background, desc, live=True)
 
 def series_cats(url):
 	raw = tools.OPEN_URL_CACHED(player_api+'&action=get_series_categories', ttl_minutes=tools.CONTENT_CACHE_TTL_SERIES)
@@ -836,9 +837,10 @@ def vod(url):
 					tools.addDirMeta(str(name).replace('[/COLOR][/B].','.[/COLOR][/B]'),url1,4,thumb or background,background,desc,str(year).replace("['","" ).replace("']",""),str(cast).split(),ratin,runt,genre)
 				except:
 					pass
-				xbmcplugin.setContent(int(sys.argv[1]), 'vod')
+				xbmcplugin.setContent(int(sys.argv[1]), 'movies')
 			else:
 				tools.addDir(name,url1,4,thumb or background,background,desc)
+				xbmcplugin.setContent(int(sys.argv[1]), 'movies')
 
 def _catalog_items(endpoint, ttl_minutes):
 	"""Fetch an Xtream catalog and normalize list/dictionary response shapes."""
@@ -1142,7 +1144,7 @@ def search():
 		label = section_labels.get(r[0], '') + r[1]
 		# Playable items: mode==4, isFolder=False
 		if r[0] in ('movie', 'live', 'vod'):
-			tools.addDir(label, r[2], 4, r[4], r[5], r[6])
+			tools.addDir(label, r[2], 4, r[4], r[5], r[6], live=(r[0] == 'live'))
 		# Non-playable: keep original mode (series/catchup)
 		else:
 			tools.addDir(label, r[2], r[3], r[4], r[5], r[6])
@@ -1238,22 +1240,18 @@ def tvguide():
 def _ensure_fullscreen_playback(player_obj):
 	"""Wait briefly for video and activate Kodi's fullscreen window."""
 	monitor = xbmc.Monitor()
-	for _ in range(150):
+	for _ in range(30):
 		if monitor.abortRequested():
 			return False
 		try:
 			if player_obj.isPlayingVideo():
-				for _ in range(5):
-					if xbmc.getCondVisibility('Window.IsActive(fullscreenvideo)'):
-						return True
-					xbmc.executebuiltin('Dialog.Close(busydialog)')
-					xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
+				if not xbmc.getCondVisibility('Window.IsActive(fullscreenvideo)'):
 					xbmc.executebuiltin('ActivateWindow(FullScreenVideo)')
 					xbmc.sleep(200)
 				return True
 		except Exception:
 			pass
-		xbmc.sleep(100)
+		xbmc.sleep(200)
 	return False
 
 def apply_subtitles_for_playback(player_obj, url_arg, name_arg='', desc_arg=''):
@@ -1850,7 +1848,16 @@ def favorites_list():
 			return
 
 		for fav in items:
-			tools.addDir(fav.get('name',''), fav.get('url',''), int(fav.get('mode', 4)), fav.get('iconimage', icon), fav.get('fanart', background), fav.get('description',''))
+			tools.addDir(fav.get('name',''), fav.get('url',''), int(fav.get('mode', 4)), fav.get('iconimage', icon), fav.get('fanart', background), fav.get('description',''), live=(current == 'live'), mediatype=('movie' if current == 'vod' else ('tvshow' if current == 'series' else None)))
+		try:
+			if current == 'vod':
+				xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+			elif current == 'series':
+				xbmcplugin.setContent(int(sys.argv[1]), 'tvshows')
+			elif current == 'live':
+				xbmcplugin.setContent(int(sys.argv[1]), 'videos')
+		except Exception:
+			pass
 		return
 
 	# Top-level Favorites menu: show categories with counts. Click a category to view its favorites.
@@ -1892,7 +1899,117 @@ def history_list():
 			label = '[COLOR grey]%s[/COLOR]  %s' % (ago, channel_name)
 		else:
 			label = channel_name
-		tools.addDir(label, item.get('url', ''), 35, item.get('iconimage', icon), background, item.get('description', ''))
+		_item_url = item.get('url', '')
+		_item_live = (tools.classify_favorite(None, _item_url, item.get('description', ''), item.get('name', '')) == 'live')
+		tools.addDir(label, _item_url, 35, item.get('iconimage', icon), background, item.get('description', ''), live=_item_live)
+
+def watch_trailer():
+	"""Search YouTube for an official trailer and play it via the YouTube addon."""
+	raw_title = (name or '').strip()
+	# Clean provider prefixes/formatting to get the original title.
+	trailer_title = re.sub(r'\[/?(?:B|I|COLOR)(?:\s+[^\]]+)?\]', '', raw_title, flags=re.IGNORECASE)
+	trailer_title = re.sub(r'^[A-Z]{2}\s*-\s*', '', trailer_title).strip()
+
+	# If a TMDB id is available, try Trakt to resolve the canonical title/year.
+	try:
+		tmdb_match = re.search(r'TMDB_ID[:\s]+(\d+)', str(description or ''))
+		if tmdb_match and trakt.is_enabled() and trakt.is_authorized():
+			tmdb_id = tmdb_match.group(1)
+			for media_type in ('movie', 'show'):
+				status, data = trakt._request('GET', '/search/tmdb/%s?type=%s' % (tmdb_id, media_type))
+				if status == 200 and isinstance(data, list) and data:
+					item = data[0].get(media_type, {}) or data[0].get('movie', {}) or data[0].get('show', {})
+					t_title = item.get('title')
+					t_year = item.get('year')
+					if t_title:
+						trailer_title = t_title
+						if t_year:
+							trailer_title = '%s (%s)' % (t_title, t_year)
+						break
+	except Exception:
+		pass
+
+	if not trailer_title:
+		try:
+			xbmcgui.Dialog().ok(ADDON_NAME, 'No title available for trailer search.')
+		except Exception:
+			pass
+		return
+
+	# Make sure the YouTube addon is available.
+	try:
+		xbmcaddon.Addon('plugin.video.youtube')
+	except Exception:
+		try:
+			xbmcgui.Dialog().ok(ADDON_NAME, 'Please install the YouTube addon (plugin.video.youtube) to watch trailers.')
+		except Exception:
+			pass
+		return
+
+	query = trailer_title + ' official trailer'
+	candidates = []
+	try:
+		import urllib.request, urllib.parse
+		search_url = 'https://www.youtube.com/results?search_query=' + urllib.parse.quote(query)
+		req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+		data = urllib.request.urlopen(req, timeout=20).read().decode('utf-8', 'ignore')
+		pattern = re.compile(r'"videoId":"([A-Za-z0-9_-]{11})".*?"title":\{"runs":\[\{"text":"(.*?)"\}', re.S)
+		seen = set()
+		for vid, title in pattern.findall(data):
+			if vid in seen:
+				continue
+			seen.add(vid)
+			candidates.append((vid, title))
+			if len(candidates) >= 6:
+				break
+	except Exception as e:
+		try:
+			xbmc.log('%s: trailer search failed: %s' % (ADDON_ID, e), xbmc.LOGERROR)
+		except Exception:
+			pass
+
+	# Prefer entries that are actually trailers.
+	trailer_candidates = [(v, t) for (v, t) in candidates if 'trailer' in t.lower()]
+	if trailer_candidates:
+		candidates = trailer_candidates
+	candidates = candidates[:3]
+
+	if not candidates:
+		try:
+			xbmcgui.Dialog().ok(ADDON_NAME, 'No trailer found on YouTube for "%s".' % trailer_title)
+		except Exception:
+			pass
+		return
+
+	# If the best match is clearly an official trailer, play it directly.
+	first_title = candidates[0][1].lower()
+	auto_play = (len(candidates) == 1) or ('trailer' in first_title and trailer_title.lower().split()[0] in first_title)
+	video_id = candidates[0][0]
+	if not auto_play and len(candidates) > 1:
+		labels = [t for (_, t) in candidates]
+		choice = xbmcgui.Dialog().select('Select trailer for %s' % trailer_title, labels)
+		if choice < 0:
+			return
+		video_id = candidates[choice][0]
+
+	play_url = 'plugin://plugin.video.youtube/play/?video_id=%s' % video_id
+	# Do not alter the user's YouTube addon settings; only avoid an extra prompt
+	# for this trailer playback.
+	try:
+		xbmcgui.Window(10000).setProperty('PLAY_PROMPT_QUALITY', 'false')
+	except Exception:
+		pass
+	try:
+		liz = xbmcgui.ListItem(path=play_url)
+		liz.setInfo(type='Video', infoLabels={'Title': trailer_title + ' - Official Trailer'})
+		liz.setProperty('IsPlayable', 'true')
+		player = xbmc.Player()
+		player.play(play_url, liz)
+	except Exception as e:
+		try:
+			xbmcgui.Dialog().ok(ADDON_NAME, 'Failed to play trailer: %s' % str(e))
+		except Exception:
+			pass
 
 def manage_profiles():
 	profiles = tools.load_profiles()
@@ -2143,6 +2260,17 @@ elif mode==33:
 elif mode==34:
 	manage_profiles()
 
+elif mode==40:
+	watch_trailer()
+
+elif mode==41:
+	tools.remove_from_history(url)
+	xbmc.executebuiltin('Container.Refresh')
+
+elif mode==42:
+	tools.add_to_history(url, name or '', iconimage or icon, description or '')
+	xbmc.executebuiltin('Container.Refresh')
+
 elif mode==37:
 	# Built-in TV Guide / EPG
 	stream_url, ch_name, ch_icon, now_title, now_desc = epg.open_epg(player_api, play_live, ADDONPATH)
@@ -2168,9 +2296,6 @@ elif mode==37:
 			apply_subtitles_for_playback(player, stream_url, ch_name or '', now_desc)
 		except Exception:
 			pass
-		xbmc.sleep(200)
-		xbmc.executebuiltin('Dialog.Close(busydialog)')
-		xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
 
 elif mode==35:
 	# Last Played / history uses Kodi's normal playable-item resolver just

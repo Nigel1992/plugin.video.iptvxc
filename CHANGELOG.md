@@ -1,3 +1,14 @@
+# Version 3.9.1 (2026-11-21)
+
+### Fixes & improvements
+- Watched markers now apply to any non-Live-TV item, including items inside folders.
+- Added "Mark as Unwatched"/"Mark as Watched" context-menu actions.
+- Added "Watch Trailer" context menu (YouTube addon), with Trakt title resolution and a 3-choice picker.
+- Fixed Live TV cache TTL enum handling (7-day cache now honored for TV/Movies/Series).
+- Main menu icons replaced with the new 512px padded set.
+- Reduced busy-spinner (blue circle) flicker during playback.
+- Favorites > Movies now show watched overlay like Series episodes.
+
 # Version 3.9.0 (2026-11-20)
 
 ### Major update

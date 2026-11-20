@@ -50,7 +50,8 @@ XCUI Streams is a fast, reliable XC/XCUI playback add-on for Kodi 21 (Omega). It
 - **Last Played** quick-resume item at the top of home
 - **Live pause/timeshift** on supported `.ts` streams
 - **Auto-reconnect** for live streams with progressive backoff
-- **Watched indicators** in episode lists
+- **Watched indicators** in lists (any item except Live TV)
+- **Watch Trailer** context menu (YouTube) and **Mark as Unwatched** toggle
 - **Trakt scrobbling** via the separate `script.trakt` addon
 
 ---

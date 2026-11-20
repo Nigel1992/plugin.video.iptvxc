@@ -162,6 +162,55 @@ XCUI Streams can send anonymous usage pings to help gauge adoption. **Enabled by
 
 ## 🤝 Contributing
 
+### Features & how to use
+
+<details>
+<summary><b>Pause live TV (timeshift)</b></summary>
+
+- Works on supported `.ts` live streams.
+- Enable it in `Settings` → `Playback` → **Live TV Pause / Timeshift (.ts)**.
+- While watching, use Kodi's pause button. The stream keeps a buffer on disk so you can rewind/pause.
+- Pause length depends on disk space (up to ~9 hours).
+
+</details>
+
+<details>
+<summary><b>Auto-reconnect for live streams</b></summary>
+
+- If a live stream stops or errors, the addon retries automatically.
+- Toggle and max retries are in `Settings` → `Playback`.
+- Uses progressive backoff (3s, 5s, 8s, 10s, 15s).
+- Rapid crashes count faster toward the limit.
+
+</details>
+
+<details>
+<summary><b>Watched indicators</b></summary>
+
+- Played episodes get a native Kodi watched checkmark in lists.
+- No setup needed; just play an episode.
+
+</details>
+
+<details>
+<summary><b>Trakt scrobbling (via script.trakt)</b></summary>
+
+1. Install **script.trakt** from the Kodi repository and authorize it with your Trakt account.
+2. In script.trakt settings, disable **Exclude Plugin**, **Exclude HTTP**, and **Exclude Script** so this addon's streams are not skipped.
+3. In this addon: `Settings` → `Trakt` → enable **Enable Trakt (via script.trakt addon)**.
+4. Play a movie or episode; script.trakt will scrobble automatically using the metadata provided by this addon.
+
+</details>
+
+<details>
+<summary><b>After an update</b></summary>
+
+- The addon clears old cache/bytecode automatically.
+- A "what's new" dialog is shown once.
+- If anything looks odd, restart Kodi.
+
+</details>
+
 ### Trakt setup (via script.trakt)
 1. Install **script.trakt** from the Kodi repository and authorize it with your Trakt account.
 2. In this addon: `Settings` → `Trakt` → enable **Enable Trakt (via script.trakt addon)**.

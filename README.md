@@ -119,44 +119,7 @@ XCUI Streams can send anonymous usage pings to help gauge adoption. **Enabled by
 
 ## 📝 Release History
 
-### Version 3.8.10 (2026-11-19)
-- **Issue #9 fix:** Live TV, VOD, and Series categories no longer take hours to populate.
-- Raised the default network timeout from 3s to 90s and enforced a 90s floor for older saved settings, so slow IPTV panels (which need 15–45s per response) are not cut off.
-- Added visible feedback when a category/channel/series load fails or returns no data, including a hint to increase the Network timeout in Settings.
-- Verified against a real provider: Live TV categories now load in ~16s (was timing out at 3s), VOD in ~16s, Series in under 1s; the full 55,000-channel "All" list loads in ~50s.
-- EPG loading also benefits from the longer timeout.
-
-### Version 3.8.9 (2026-08-27)
-- **Search:** always prompts for a fresh query instead of auto-running the previous search (issue #7).
-- **Readiness:** validates credentials before searching; clear status when no data loaded (issue #8).
-- **Feedback:** searched counts and empty states; live "Found: N" during search.
-- **Reload:** "Reload Subscription Data" action in Settings and Extras.
-- **Home:** setup prompt when subscription details are missing.
-- **Telemetry:** opt-out anonymous usage ping (enabled by default).
-
-### Version 3.8.8 (2026-08-26)
-- Search rebuilt around real Xtream catalogs; cancellable progress; restored series flows.
-- Live TV/EPG canonical channel names; generated PVR playlists use real channel names.
-- Playback fixes (resolver, fullscreen, Last Played labels); removed resident threads.
-- Cache confirmation; endpoint fallback; credential redaction.
-
-### Version 3.8.7 (2026-08-25)
-- Clear Cache fix for Kodi 21 (`xbmcvfs.translatePath`).
-
-### Version 3.8.6 (2026-04-01)
-- Scoped search popup; network retry settings; deterministic dedupe/sort.
-
-### Version 3.8.5 (2026-03-31)
-- Favorites categories with counts; per-category subtitles; bug fixes.
-
-### Version 3.8.4 (2026-03-28)
-- Icon mapping, Last Played icon, clean ZIP packaging.
-
-### Version 3.6.0 (2026-03-03)
-- Freeze/stop fixes, persistent caching, EPG, Favorites, Multi-Server Profiles.
-
-### Version 3.5.2 (2026-01-28)
-- Playback retry up to 5 times.
+See the full changelog: [CHANGELOG.md](CHANGELOG.md)
 
 ---
 

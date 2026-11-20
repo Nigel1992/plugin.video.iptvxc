@@ -532,6 +532,7 @@ def home():
 	tools.addDir('Recently Watched','url',32,iconrecent,background,'')
 	tools.addDir('Account Information','url',6,iconaccount,background,'')
 	tools.addDir('Live TV','live',1,iconlive,background,'')
+	tools.addDir('Live TV [Filtered]','live_filtered',1,iconlive,background,'')
 	tools.addDir('Movies/VOD','vod',3,iconMoviesod,background,'')
 	tools.addDir('Series','live',18,iconTvseries,background,'')
 	tools.addDir('[COLOR FF42A5F5][B]TV Guide[/B][/COLOR]','epg',37,icontvguide,background,'')
@@ -548,6 +549,12 @@ def livecategory():
 			'url', -1, icon, background, '')
 		return
 	hidexxx = xbmcaddon.Addon().getSetting('hidexxx')=='true'
+	filter_text = ''
+	try:
+		filter_text = (xbmcaddon.Addon().getSetting('live_filter_text') or '').strip()
+	except Exception:
+		filter_text = ''
+	filtered_mode = (str(url).strip().lower() == 'live_filtered')
 	try:
 		root = ET.fromstring(data)
 	except Exception:
@@ -558,6 +565,9 @@ def livecategory():
 	for ch in root.findall('.//channel'):
 		t = ch.findtext('title', default='')
 		name = tools.b64(t) if t else ''
+		if filtered_mode and filter_text:
+			if filter_text.lower() not in (name or '').lower():
+				continue
 		p = ch.findtext('playlist_url', default='')
 		url2 = tools.check_protocol(p).replace('<![CDATA[','').replace(']]>','')
 		if not hidexxx or (hidexxx and not any(s in name for s in adult_tags)):

@@ -3,6 +3,7 @@
 		<setting id="DNS" type="text" label="DNS" default=""/>
 		<setting id="Username" type="text" label="Username" default=""/>
 		<setting id="Password" type="text" label="Password" default=""/>
+		<setting id="live_filter_text" type="text" label="Live TV category filter (Live TV [Filtered])" default="" />
 		<setting id="meta" type="bool" label="VOD meta" visible="false" default="false"/>
 		<setting id="hidexxx" type="bool" label="Show Adult" visible="false" default="false"/>
 		<setting id="xxx_pwset" type="bool" label="Password Lock Adult Content" default="false"/>

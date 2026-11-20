@@ -110,10 +110,44 @@ XCUI Streams is a fast, reliable XC/XCUI playback add-on for Kodi 21 (Omega). It
 </details>
 
 <details>
+<summary><b>Live TV [Filtered]</b></summary>
+
+- Open **Live TV [Filtered]** from the home menu.
+- Set the filter text in `Settings` → `General` → **Live TV category filter**.
+- Only categories containing that text (case-insensitive) are shown.
+
+</details>
+
+<details>
 <summary><b>Watched indicators</b></summary>
 
 - Played episodes get a native Kodi watched checkmark in lists.
 - No setup needed; just play an episode.
+
+</details>
+
+<details>
+<summary><b>Favorites & history</b></summary>
+
+- Long-press any item to add/remove from Favorites.
+- Favorites menu groups Live TV, Movies/VOD, and Series.
+- Recently Watched logs the last 25 streams (configurable) and is clearable from Extras.
+
+</details>
+
+<details>
+<summary><b>Multi-server profiles</b></summary>
+
+- Save, switch, and delete provider credentials from Settings → Switch Server.
+- Cache is auto-cleared on switch.
+
+</details>
+
+<details>
+<summary><b>EPG / TV Guide</b></summary>
+
+- Built-in EPG window with category browsing, search, and progress bars.
+- Selecting a programme plays that channel.
 
 </details>
 
@@ -124,6 +158,15 @@ XCUI Streams is a fast, reliable XC/XCUI playback add-on for Kodi 21 (Omega). It
 2. In script.trakt settings, disable **Exclude Plugin**, **Exclude HTTP**, and **Exclude Script** so this addon's streams are not skipped.
 3. In this addon: `Settings` → `Trakt` → enable **Enable Trakt (via script.trakt addon)**.
 4. Play a movie or episode; script.trakt will scrobble automatically using the metadata provided by this addon.
+
+</details>
+
+<details>
+<summary><b>Cache & performance</b></summary>
+
+- Persistent file-based caching for Live TV, Movies/VOD, Series, and Catch-up.
+- Configurable cache expiry in `Settings` → `Cache`.
+- Clear cache from Extras → Clear Cache.
 
 </details>
 

@@ -1,3 +1,8 @@
+# Version 3.9.4 (2026-11-20)
+
+### UX
+- Show a "what's new" dialog after an update (restart recommended).
+
 # Version 3.9.0 (2026-11-20)
 
 ### Major update

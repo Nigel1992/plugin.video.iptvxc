@@ -476,10 +476,18 @@ def _migrate_on_update():
 				marker_file.write(current_version)
 		except Exception:
 			pass
-		# Recommend a full Kodi restart so stale in-memory modules are dropped.
+		# Show a short "what's new" dialog after an update.
 		try:
-			xbmcgui.Dialog().ok(ADDON_NAME,
-				'Addon updated to %s.\\nFor best results please restart Kodi.' % current_version)
+			whats_new = (
+				'Updated to %s.\\n\\n'
+				'New:\\n'
+				'- .ts live pause/timeshift via inputstream.ffmpegdirect\\n'
+				'- .ts resilience and auto-reconnect with backoff\\n'
+				'- Native watched indicators in episode lists\\n'
+				'- Trakt via script.trakt (enable in settings)\\n\\n'
+				'For best results, restart Kodi.'
+			) % current_version
+			xbmcgui.Dialog().ok(ADDON_NAME, whats_new)
 		except Exception:
 			pass
 	except Exception:
@@ -1291,40 +1299,71 @@ def stream_video(url, playback_name=None, playback_icon=None, playback_descripti
 	# can stall Kodi's texture cache / player on stop and seek.
 	liz.setArt({'icon': icon, 'thumb': icon})
 	_info_labels = {'Title': item_name, 'Plot': item_description, 'TVShowTitle': item_name}
-	# Provide metadata so the Trakt service addon can scrobble automatically.
+	# Provide metadata so the Trakt service addon can scrobble automatically,
+	# but only when the user has enabled Trakt in this add-on's settings.
+	_trakt_enabled = False
+	try:
+		_trakt_enabled = (ADDON.getSetting('trakt_enabled') == 'true')
+	except Exception:
+		_trakt_enabled = False
 	_lower = str(url).lower()
-	if '/movie/' in _lower:
-		_info_labels['mediatype'] = 'movie'
-		_tmdb_match = re.search(r'TMDB_ID[:\s]+(\d+)', str(item_description or ''))
-		if _tmdb_match:
-			try:
-				liz.setUniqueIDs({'tmdb': _tmdb_match.group(1)})
-			except Exception:
-				pass
-	elif '/series/' in _lower:
-		_info_labels['mediatype'] = 'episode'
-		meta = {}
-		try:
-			meta = tools.load_episode_meta(url) or {}
-		except Exception:
+	_tmdb_id = None
+	if _trakt_enabled:
+		if '/movie/' in _lower:
+			_info_labels['mediatype'] = 'movie'
+			_tmdb_match = re.search(r'TMDB_ID[:\s]+(\d+)', str(item_description or ''))
+			if _tmdb_match:
+				_tmdb_id = _tmdb_match.group(1)
+				try:
+					liz.setUniqueIDs({'tmdb': _tmdb_id})
+				except Exception:
+					pass
+			_ym = re.search(r'\((\d{4})\)', str(item_name or ''))
+			if _ym:
+				_info_labels['Year'] = int(_ym.group(1))
+		elif '/series/' in _lower:
+			_info_labels['mediatype'] = 'episode'
 			meta = {}
-		tvshowtitle = meta.get('tvshowtitle') or item_name
-		_info_labels['TVShowTitle'] = tvshowtitle
-		if meta.get('season') is not None:
-			_info_labels['season'] = int(meta['season'])
-		if meta.get('episode') is not None:
-			_info_labels['episode'] = int(meta['episode'])
-		# Fallback parse from title if meta missing.
-		if 'season' not in _info_labels or 'episode' not in _info_labels:
-			_m = re.search(r'S(\d+)E(\d+)', str(item_name or ''), re.IGNORECASE)
-			if _m:
-				_info_labels['season'] = int(_m.group(1))
-				_info_labels['episode'] = int(_m.group(2))
-		if meta.get('tmdb'):
 			try:
-				liz.setUniqueIDs({'tmdb': str(meta['tmdb'])})
+				meta = tools.load_episode_meta(url) or {}
 			except Exception:
-				pass
+				meta = {}
+			tvshowtitle = meta.get('tvshowtitle') or item_name
+			tvshowtitle = re.sub(r'^[A-Z]{2}\s*-\s*', '', str(tvshowtitle))
+			tvshowtitle = re.sub(r'\s*\([^)]*\)', '', tvshowtitle).strip() or tvshowtitle
+			_info_labels['TVShowTitle'] = tvshowtitle
+			_ym = re.search(r'\((\d{4})\)', str(item_name or ''))
+			if _ym:
+				_info_labels['Year'] = int(_ym.group(1))
+			_em = re.search(r'S\d+E\d+\s*-\s*(.+)$', str(item_name or ''), re.IGNORECASE)
+			if _em:
+				_info_labels['EpisodeName'] = _em.group(1).strip()
+			if meta.get('season') is not None:
+				_info_labels['season'] = int(meta['season'])
+				_info_labels['Season'] = int(meta['season'])
+			if meta.get('episode') is not None:
+				_info_labels['episode'] = int(meta['episode'])
+				_info_labels['Episode'] = int(meta['episode'])
+			if 'season' not in _info_labels or 'episode' not in _info_labels:
+				_m = re.search(r'S(\d+)E(\d+)', str(item_name or ''), re.IGNORECASE)
+				if _m:
+					_info_labels['season'] = int(_m.group(1))
+					_info_labels['Season'] = int(_m.group(1))
+					_info_labels['episode'] = int(_m.group(2))
+					_info_labels['Episode'] = int(_m.group(2))
+			if meta.get('tmdb'):
+				_tmdb_id = str(meta['tmdb'])
+				try:
+					liz.setUniqueIDs({'tmdb': _tmdb_id})
+				except Exception:
+					pass
+	# Set script.trakt ids property for non-library items.
+	try:
+		if _tmdb_id and _trakt_enabled:
+			import json as _json
+			xbmcgui.Window(10000).setProperty('script.trakt.ids', _json.dumps({'tmdb': int(_tmdb_id)}))
+	except Exception:
+		pass
 	liz.setInfo(type='Video', infoLabels=_info_labels)
 	liz.setProperty('IsPlayable', 'true')
 	liz.setContentLookup(False)
@@ -1385,15 +1424,25 @@ def stream_video(url, playback_name=None, playback_icon=None, playback_descripti
 				if tmdb_match:
 					trakt_payload = {'ids': {'tmdb': int(tmdb_match.group(1))}}
 				else:
-					trakt_payload = {'title': item_name}
+					mt = re.search(r'^(.*?)\s*\((\d{4})\)', str(item_name or '').replace('EN - ', ''))
+					if mt:
+						trakt_payload = {'title': mt.group(1).strip(), 'year': int(mt.group(2))}
+					else:
+						trakt_payload = {'title': str(item_name or '').replace('EN - ', '').strip()}
 			elif '/series/' in lower:
 				trakt_type = 'episode'
-				m = re.search(r'S(\d+)E(\d+)', str(item_name or ''), re.IGNORECASE)
+				m = re.search(r'(.+?)\s*-\s*S(\d+)E(\d+)', str(item_name or ''), re.IGNORECASE)
 				if m:
-					season = int(m.group(1))
-					episode = int(m.group(2))
-					show_title = re.sub(r'\s*S\d+E\d+.*', '', str(item_name or '')).strip() or item_name
-					trakt_payload = {'show': {'title': show_title}, 'season': season, 'number': episode}
+					season = int(m.group(2))
+					episode = int(m.group(3))
+					show_part = m.group(1).strip()
+					show_title = re.sub(r'^[A-Z]{2}\s*-\s*', '', show_part)
+					year = None
+					ym = re.search(r'\((\d{4})\)', show_title)
+					if ym:
+						year = int(ym.group(1))
+						show_title = re.sub(r'\s*\([^)]*\)', '', show_title).strip()
+					trakt_payload = {'show': {'title': show_title, 'year': year}, 'season': season, 'number': episode}
 	except Exception:
 		pass
 	# Track this stream for add-on-scoped auto-reconnect (live only).

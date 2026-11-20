@@ -162,6 +162,12 @@ XCUI Streams can send anonymous usage pings to help gauge adoption. **Enabled by
 
 ## 🤝 Contributing
 
+### Trakt setup (via script.trakt)
+1. Install **script.trakt** from the Kodi repository and authorize it with your Trakt account.
+2. In this addon: `Settings` → `Trakt` → enable **Enable Trakt (via script.trakt addon)**.
+3. In script.trakt settings, make sure **Exclude Plugin**, **Exclude HTTP**, and **Exclude Script** are disabled so this addon's streams are not skipped.
+4. Play a movie or episode; script.trakt will scrobble automatically using the metadata provided by this addon.
+
 Issues and PRs are welcome. Please avoid sharing provider credentials publicly. Include Kodi version, platform, and logs when reporting bugs.
 
 - **Report bugs:** use the `bug` label with reproduction steps.

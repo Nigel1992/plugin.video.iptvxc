@@ -208,8 +208,8 @@ XCUI Streams can send anonymous usage pings to help gauge adoption. **Enabled by
 
 ![Total Downloads (all releases)](https://img.shields.io/github/downloads/Nigel1992/plugin.video.iptvxc/total?label=Total%20Downloads&color=brightgreen&style=for-the-badge)
 ![Telemetry Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstalls&query=%24.value&label=Telemetry%20Installs&color=blue&style=for-the-badge)
-![Today's Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstall-2026-11-21&query=%24.value&label=Today%27s%20Installs&color=orange&style=for-the-badge)
-![Today's Active](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Factive-2026-11-21&query=%24.value&label=Today%27s%20Active&color=blue&style=for-the-badge)
+![Today's Installs](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Finstall-2026-11-22&query=%24.value&label=Today%27s%20Installs&color=orange&style=for-the-badge)
+![Today's Active](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Factive-2026-11-22&query=%24.value&label=Today%27s%20Active&color=blue&style=for-the-badge)
 ![Daily Active (Cumulative)](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fiptvxc%2Fdaily&query=%24.value&label=Daily%20Active%20(Cumulative)&color=lightgrey&style=for-the-badge)
 
 Total installs and daily active counts are tracked via an anonymous opt-out ping (enabled by default).

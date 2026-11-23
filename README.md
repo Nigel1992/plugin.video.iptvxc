@@ -238,8 +238,9 @@ Issues and PRs are welcome. Please avoid sharing provider credentials publicly. 
 - Original work by **Fire TV Guru**
 - Community contributions and testing
 
-## Support This Project
+## 💖 Support the Project
 
-All donations go to your chosen charity. Your name will be listed as a supporter/donor. Contact: thedjskywalker@gmail.com
+I build this project in my free time and don't need donations for myself. If you'd like to give something back, I'd kindly ask you to donate to a charity of your choice instead — they need it far more than I do. If you still prefer to support me directly in private, thank you so much; it's genuinely appreciated.
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Nigel1992)
+[![Ko-Fi](https://img.shields.io/badge/Ko--Fi-Support%20me-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/nigel1992)
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/donate/?hosted_button_id=KYV9ARF99ZSCE)
